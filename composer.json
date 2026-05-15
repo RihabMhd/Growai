@@ -8,9 +8,11 @@
         "php": "^8.2",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
+        "laravel/socialite": "^5.27",
         "laravel/tinker": "^2.9",
         "predis/predis": "^3.4",
-        "shopify/shopify-api": "^6.1"
+        "shopify/shopify-api": "^6.1",
+        "symfony/mailgun-mailer": "^7.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
