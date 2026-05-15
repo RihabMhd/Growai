@@ -23,8 +23,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
 
-            $table->enum('role', ['admin', 'manager', 'agent'])
-                ->default('agent');
+            $table->enum('role', ['admin', 'staff'])
+                ->default('staff');
 
             $table->boolean('is_active')->default(true);
 
