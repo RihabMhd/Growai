@@ -1,11 +1,16 @@
 <?php 
 
-// Route::prefix('auth')->group(function () {
-//     Route::post('/login', ...);
-//     Route::post('/logout', ...);
-// });
+use App\Http\Controllers\Api\AuthController;
+use Illuminate\Support\Facades\Route;
 
-// Route::apiResource('orders', OrderController::class);
-// Route::apiResource('clients', ClientController::class);
-// Route::apiResource('products', ProductController::class);
-// Route::apiResource('shops', ShopController::class);
+Route::prefix('auth')->group(function () {
+
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+        Route::get('/me', [AuthController::class, 'me']);
+
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
+});
