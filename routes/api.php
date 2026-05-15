@@ -20,4 +20,10 @@ Route::prefix('auth')->group(function () {
     // Facebook
     Route::get('/facebook/redirect', [SocialAuthController::class, 'facebookRedirect']);
     Route::get('/facebook/callback', [SocialAuthController::class, 'facebookCallback']);
+
+    // Protected Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
 });
