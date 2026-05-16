@@ -22,8 +22,36 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'is_active'
+        'is_active',
+        'quota',
+        'is_dispatch_active',
+        'commission_trigger',
+        'commission_amount',
+        'commission_type',
+        'avatar'
     ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'avatar_url',
+    ];
+
+
+    /**
+     * Get user avatar or fallback to a gorgeous illustration based on their name.
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            return $this->avatar;
+        }
+        return "https://api.dicebear.com/7.x/lorelei/svg?seed=" . urlencode($this->name);
+    }
+
 
 
     /**
@@ -52,6 +80,11 @@ class User extends Authenticatable
     public function team()
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class);
     }
 
     public function orderHistories()

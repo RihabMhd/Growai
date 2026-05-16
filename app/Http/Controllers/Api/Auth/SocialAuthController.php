@@ -31,6 +31,13 @@ class SocialAuthController extends Controller
             ], 403);
         }
 
+        // Save Google profile photo and info
+        $user->update([
+            'avatar' => $googleUser->avatar,
+            'provider' => 'google',
+            'provider_id' => $googleUser->id
+        ]);
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -39,14 +46,14 @@ class SocialAuthController extends Controller
         ]);
     }
 
-public function facebookRedirect()
-{
-    return Socialite::driver('facebook')
-        ->stateless()
-        ->with(['auth_type' => 'rerequest'])
-        ->scopes(['public_profile', 'email'])
-        ->redirect();
-}
+    public function facebookRedirect()
+    {
+        return Socialite::driver('facebook')
+            ->stateless()
+            ->with(['auth_type' => 'rerequest'])
+            ->scopes(['public_profile', 'email'])
+            ->redirect();
+    }
 
     public function facebookCallback()
     {
@@ -65,6 +72,13 @@ public function facebookRedirect()
                 'message' => 'Unauthorized. Your account is inactive.'
             ], 403);
         }
+
+        // Save Facebook profile photo and info
+        $user->update([
+            'avatar' => $facebookUser->avatar,
+            'provider' => 'facebook',
+            'provider_id' => $facebookUser->id
+        ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
