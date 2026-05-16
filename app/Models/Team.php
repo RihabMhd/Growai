@@ -11,7 +11,10 @@ class Team extends Model
 
     protected $fillable = [
         'name',
-        'description'
+        'description',
+        'dispatch_auto',
+        'inactive_strategy',
+        'commission_currency'
     ];
 
     public function users()

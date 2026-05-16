@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\Auth\PasswordController;
+use App\Http\Controllers\Api\TeamController;
+
 Route::prefix('auth')->group(function () {
 
     // Email login
@@ -25,5 +27,13 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        
+        // Team Routes
+        Route::get('/team', [TeamController::class, 'index']);
+        Route::post('/team/members', [TeamController::class, 'storeMember']);
+        Route::put('/team/members/{id}', [TeamController::class, 'updateMember']);
+        Route::post('/team/settings', [TeamController::class, 'updateSettings']);
+        Route::delete('/team/members/{id}', [TeamController::class, 'destroyMember']);
+        Route::post('/team/impersonate/{id}', [TeamController::class, 'impersonate']);
     });
 });
