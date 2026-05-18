@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Team;
@@ -113,7 +114,7 @@ class OrderObserver
         // Check if status has changed
         if ($order->isDirty('status')) {
             $newStatus = $order->status;
-            
+        
             // Log status change in history
             $oldStatus = $order->getOriginal('status') ?? 'none';
             OrderHistory::create([
@@ -124,6 +125,22 @@ class OrderObserver
                 'new_value' => $newStatus,
                 'description' => "Statut de la commande modifié de '{$oldStatus}' à '{$newStatus}'."
             ]);
+
+            $status = OrderStatus::where('slug', $newStatus)->first();
+            if ($status && $status->auto_send && !empty($status->whatsapp_message)) {
+                // Use the dedicated WhatsAppService to send the templated message
+                $whatsappService = app('\\App\\Services\\WhatsAppService');
+                // Simple placeholder replacement
+                $placeholders = [
+                    '{{order_id}}' => $order->id,
+                    '{{status}}' => $newStatus,
+                    '{{customer_name}}' => $order->customer_name ?? '',
+                    '{{customer_phone}}' => $order->customer_phone ?? '',
+                    '{{total}}' => $order->total_price ?? '',
+                ];
+                $message = str_replace(array_keys($placeholders), array_values($placeholders), $status->whatsapp_message);
+                $whatsappService->send($order->customer_phone, $message);
+            }
 
             // 1. Make sure order is assigned and commission is not already paid
             if ($order->assigned_to && !$order->commission_paid) {

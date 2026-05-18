@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\OrderStatusController;
 
 Route::prefix('auth')->group(function () {
 
@@ -42,5 +43,13 @@ Route::prefix('auth')->group(function () {
         Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
         Route::put('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'update']);
         Route::post('/orders/{id}/assign', [\App\Http\Controllers\Api\OrderController::class, 'assign']);
+
+        // Order Status Routes
+        Route::get('/order-statuses', [\App\Http\Controllers\Api\OrderStatusController::class, 'index']);
+        Route::post('/order-statuses', [\App\Http\Controllers\Api\OrderStatusController::class, 'store']);
+        Route::get('/order-statuses/{id}', [\App\Http\Controllers\Api\OrderStatusController::class, 'show']);
+        Route::put('/order-statuses/{id}', [\App\Http\Controllers\Api\OrderStatusController::class, 'update']);
+        Route::delete('/order-statuses/{id}', [\App\Http\Controllers\Api\OrderStatusController::class, 'destroy']);
+        Route::post('/order-statuses/{id}/toggle-auto-send', [\App\Http\Controllers\Api\OrderStatusController::class, 'toggleAutoSend']);
     });
 });
