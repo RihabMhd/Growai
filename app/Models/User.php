@@ -28,6 +28,7 @@ class User extends Authenticatable
         'commission_trigger',
         'commission_amount',
         'commission_type',
+        'wallet_balance',
         'avatar'
     ];
 
@@ -74,6 +75,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_dispatch_active' => 'boolean',
+            'wallet_balance' => 'float',
+            'is_active' => 'boolean',
         ];
     }
 

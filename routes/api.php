@@ -35,5 +35,12 @@ Route::prefix('auth')->group(function () {
         Route::post('/team/settings', [TeamController::class, 'updateSettings']);
         Route::delete('/team/members/{id}', [TeamController::class, 'destroyMember']);
         Route::post('/team/impersonate/{id}', [TeamController::class, 'impersonate']);
+
+        // Order Routes
+        Route::get('/orders', [\App\Http\Controllers\Api\OrderController::class, 'index']);
+        Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'store']);
+        Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
+        Route::put('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'update']);
+        Route::post('/orders/{id}/assign', [\App\Http\Controllers\Api\OrderController::class, 'assign']);
     });
 });

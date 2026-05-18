@@ -22,12 +22,18 @@ class Order extends Model
         'financial_status',
         'notes',
         'is_abandoned',
-        'abandoned_at'
+        'abandoned_at',
+        'assigned_to',
+        'commission_paid'
     ];
 
     protected $casts = [
         'is_abandoned' => 'boolean',
-        'abandoned_at' => 'datetime'
+        'abandoned_at' => 'datetime',
+        'commission_paid' => 'boolean',
+        'total_price' => 'float',
+        'shipping_price' => 'float',
+        'discount' => 'float'
     ];
 
     public function client()
@@ -38,6 +44,11 @@ class Order extends Model
     public function shop()
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function assignedAgent()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function items()
