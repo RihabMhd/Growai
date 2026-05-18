@@ -14,11 +14,6 @@ return new class extends Migration
         Schema::create('recovery_rules', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('template_id')
-                ->nullable()
-                ->constrained('whatsapp_templates')
-                ->nullOnDelete();
-
             $table->string('name');
 
             $table->json('trigger_condition')->nullable();

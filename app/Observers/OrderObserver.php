@@ -132,12 +132,28 @@ class OrderObserver
 
         if ($status && $status->auto_send) {
             $message = $this->resolveMessage($status, $order);
+            $phoneNumber = $order->client?->phone;
 
-            if (!empty($message)) {
+            Log::info('WhatsApp auto-send check', [
+                'order_id' => $order->id,
+                'status_found' => $status ? 'yes' : 'no',
+                'auto_send' => $status->auto_send ? 'yes' : 'no',
+                'message_empty' => empty($message) ? 'yes' : 'no',
+                'phone_empty' => empty($phoneNumber) ? 'yes' : 'no',
+                'phone' => $phoneNumber,
+            ]);
+
+            if (!empty($message) && !empty($phoneNumber)) {
                 try {
                     /** @var \App\Services\WhatsAppService $whatsappService */
                     $whatsappService = app(\App\Services\WhatsAppService::class);
-                    $whatsappService->send($order->customer_phone, $message);
+                    $response = $whatsappService->send($phoneNumber, $message);
+                    Log::info('WhatsApp message sent successfully', [
+                        'order_id' => $order->id,
+                        'phone' => $phoneNumber,
+                        'response_status' => $response->status(),
+                        'response_body' => $response->body(),
+                    ]);
                 } catch (\Throwable $e) {
                     Log::error('WhatsApp send failed', [
                         'order_id' => $order->id,
@@ -224,12 +240,12 @@ class OrderObserver
         $placeholders = [
             '{{order_id}}'       => $order->id,
             '{{status}}'         => $order->status,
-            '{{customer_name}}'  => $order->customer_name  ?? '',
-            '{{customer_phone}}' => $order->customer_phone ?? '',
-            '{{total}}'          => $order->total_price    ?? '',
-            '{{shop_name}}'      => $team?->name           ?? config('app.name'),
+            '{{customer_name}}'  => $order->client?->name   ?? '',
+            '{{customer_phone}}' => $order->client?->phone  ?? '',
+            '{{total}}'          => $order->total_price     ?? '',
+            '{{shop_name}}'      => $team?->name            ?? config('app.name'),
             '{{product_name}}'   => $this->getFirstProductName($order),
-            '{{currency}}'       => $order->currency       ?? 'MAD',
+            '{{currency}}'       => $order->currency        ?? 'MAD',
         ];
 
         return str_replace(

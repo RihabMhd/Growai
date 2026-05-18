@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class OrderStatus extends Model
 {
     use HasFactory;
+    protected $table = 'order_status';
 
     protected $fillable = [
         'slug',
         'name',
-        'whatsapp_message',   // legacy single-template fallback
+        'whatsapp_message',
         'auto_send',
-        'templates',          // JSON: { "FR": "...", "AR": "...", "Darija FR": "...", ... }
+        'templates',
     ];
 
     protected $casts = [

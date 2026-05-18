@@ -24,8 +24,6 @@ class Order extends Model
         'shop_id',
         'client_id',
         'order_number',
-        'customer_name',
-        'customer_phone',
         'total_price',
         'shipping_price',
         'discount',

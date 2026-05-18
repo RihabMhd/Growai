@@ -42,9 +42,7 @@ class OrderController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_phone', 'like', "%{$search}%");
+                $q->where('order_number', 'like', "%{$search}%");
             });
         }
 
@@ -92,8 +90,6 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string',
             'is_abandoned' => 'nullable|boolean',
             'items' => 'required|array|min:1',
@@ -126,8 +122,6 @@ class OrderController extends Controller
                 'shop_id' => $shop->id,
                 'client_id' => $client->id,
                 'order_number' => 'ORD-' . strtoupper(Str::random(8)),
-                'customer_name' => $validated['customer_name'],
-                'customer_phone' => $validated['customer_phone'] ?? null,
                 'total_price' => 0.00,
                 'shipping_price' => 10.00, // standard shipping fee
                 'discount' => 0.00,
