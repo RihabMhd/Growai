@@ -24,8 +24,6 @@ class Order extends Model
         'shop_id',
         'client_id',
         'order_number',
-        'customer_name',
-        'customer_phone',
         'total_price',
         'shipping_price',
         'discount',
@@ -87,4 +85,10 @@ class Order extends Model
     {
         return $this->hasMany(Message::class);
     }
+    
+    public function statusModel() { 
+        return $this->belongsTo(OrderStatus::class, 'status', 'slug'); 
+    }
+
+
 }

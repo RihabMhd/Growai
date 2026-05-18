@@ -37,12 +37,23 @@ class OrderStatusController extends Controller
         $orderStatus->delete();
         return response()->json(['message' => 'Order status deleted successfully']);
     }
-    
+
+    /**
+     * Toggle (or explicitly set) auto_send for a status.
+     *
+     * The frontend sends { auto_send: true|false }.
+     * If no body is sent we fall back to flipping the current value.
+     */
     public function toggleAutoSend(Request $request, $id)
     {
         $orderStatus = OrderStatus::findOrFail($id);
-        $orderStatus->auto_send = !$orderStatus->auto_send;
+
+        $orderStatus->auto_send = $request->has('auto_send')
+            ? (bool) $request->input('auto_send')
+            : !$orderStatus->auto_send;
+
         $orderStatus->save();
+
         return response()->json($orderStatus);
     }
 }

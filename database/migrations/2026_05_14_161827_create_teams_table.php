@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('teams', function (Blueprint $table) {
             $table->id();
+            $table->string('whatsapp_language', 20)->default('FR');
             $table->timestamps();
         });
     }
