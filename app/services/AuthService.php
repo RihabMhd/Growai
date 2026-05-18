@@ -33,6 +33,7 @@ class AuthService
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        $user->load('products');
 
         return [
             'success' => true,
