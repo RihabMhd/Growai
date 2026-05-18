@@ -44,4 +44,8 @@ return [
         'fields'        => ['name', 'email', 'id'],
     ],
 
+    'whatsapp' => [
+        'endpoint' => env('WHATSAPP_ENDPOINT'),
+        'token'    => env('WHATSAPP_TOKEN'),
+    ],
 ];

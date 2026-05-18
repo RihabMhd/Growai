@@ -25,24 +25,13 @@ return new class extends Migration
 
             $table->string('order_number')->unique();
 
-            $table->string('customer_name');
-            $table->string('customer_phone')->nullable();
-
             $table->decimal('total_price', 10, 2)->default(0);
             $table->decimal('shipping_price', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
 
             $table->string('currency')->default('MAD');
 
-            $table->enum('status', [
-                'pending',
-                'confirmed',
-                'processing',
-                'shipped',
-                'delivered',
-                'cancelled',
-                'returned'
-            ])->default('pending');
+            $table->string('status')->default('nouveau'); 
 
             $table->enum('financial_status', [
                 'unpaid',

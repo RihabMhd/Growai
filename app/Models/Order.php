@@ -87,4 +87,10 @@ class Order extends Model
     {
         return $this->hasMany(Message::class);
     }
+    
+    public function statusModel() { 
+        return $this->belongsTo(OrderStatus::class, 'status', 'slug'); 
+    }
+
+
 }
