@@ -89,4 +89,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/sync-shopify', [ShopController::class, 'syncShopify']);
         Route::post('/shopify-credentials', [ShopController::class, 'updateShopifyCredentials']);
     });
+
+    //api/auth/team/members
+    Route::get('/auth/team/members', [TeamController::class, 'index']);
+    Route::post('/auth/team/members', [TeamController::class, 'storeMember']);
+    Route::put('/auth/team/members/{id}', [TeamController::class, 'updateMember']);
+    Route::delete('/auth/team/members/{id}', [TeamController::class, 'destroyMember']);
+    Route::post('/auth/team/settings', [TeamController::class, 'updateSettings']);
+    Route::post('/auth/team/impersonate/{id}', [TeamController::class, 'impersonate']);
 });
