@@ -3,10 +3,22 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Order extends Model
 {
     use HasFactory;
+
+    public function scopeForAgent(Builder $query, int $agentId): Builder
+    {
+        return $query->whereHas('items', function ($sub) use ($agentId) {
+            $sub->whereIn('product_id', function ($ids) use ($agentId) {
+                $ids->select('product_id')
+                    ->from('product_user')
+                    ->where('user_id', $agentId);
+            });
+        });
+    }
 
     protected $fillable = [
         'shop_id',
