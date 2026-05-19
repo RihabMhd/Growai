@@ -64,11 +64,13 @@ class ProductController extends Controller
         $validated['shop_id'] = $shop->id; // overwrite whatever frontend sent
 
         $product = $this->productService->createProduct($validated);
+        $product->refresh(); // Ensure all accessors are loaded
 
         return response()->json([
             'success' => true,
             'message' => 'Product created successfully',
-            'data' => $product
+            'data' => $product,
+            'product' => $product // Also send as 'product' for consistency
         ], 201);
     }
 

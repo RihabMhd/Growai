@@ -131,7 +131,8 @@ class TeamController extends Controller
 
         return response()->json([
             'message' => $message,
-            'member' => $user
+            'member' => $user,
+            'success' => true
         ], 201);
     }
 
