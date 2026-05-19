@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
@@ -23,35 +20,46 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            // Staff assignment
+            $table->foreignId('assigned_to')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->string('order_number')->unique();
 
+            // Amounts
             $table->decimal('total_price', 10, 2)->default(0);
             $table->decimal('shipping_price', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
+            $table->string('currency', 10)->default('MAD');
 
-            $table->string('currency')->default('MAD');
-
-            $table->string('status')->default('nouveau'); 
+            // Status (references order_statuses.slug for flexibility)
+            $table->string('status')->default('nouveau')->index();
 
             $table->enum('financial_status', [
                 'unpaid',
                 'pending',
                 'paid',
-                'refunded'
+                'refunded',
             ])->default('unpaid');
 
-            $table->text('notes')->nullable();
+            // Commission
+            $table->boolean('commission_paid')->default(false);
 
+            // Abandoned cart
             $table->boolean('is_abandoned')->default(false);
             $table->timestamp('abandoned_at')->nullable();
 
+            $table->text('notes')->nullable();
+
             $table->timestamps();
+
+            $table->index('financial_status');
+            $table->index('is_abandoned');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('orders');

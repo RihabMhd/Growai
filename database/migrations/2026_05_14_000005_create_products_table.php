@@ -6,56 +6,52 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            
+
             $table->foreignId('shop_id')
                 ->nullable()
                 ->constrained()
                 ->nullOnDelete();
 
-            // Basic Information
+            // Basic information
             $table->string('title');
             $table->string('vendor')->nullable();
             $table->string('product_type')->nullable();
-            $table->string('handle')->unique(); // slug
+            $table->string('handle')->unique(); // URL slug
+
             $table->enum('status', ['active', 'draft', 'archived'])->default('draft');
-            
-            // Tags as JSON
+
+            // Content
+            $table->text('description')->nullable();
             $table->json('tags')->nullable();
-            
+
             // Images
             $table->string('image')->nullable();
-            $table->json('images')->nullable(); // Multiple images
-            
-            // Description
-            $table->text('description')->nullable();
-            
-            // Variants (stored as JSON for flexibility)
+            $table->json('images')->nullable();
+
+            // Variants (JSON for flexibility: title, sku, price, stock, cost, compare_at_price)
             $table->json('variants')->nullable();
-            
+
+            // Global cost (when no variants)
+            $table->decimal('cost', 10, 2)->nullable();
+
             // External sync
-            $table->string('external_product_id')->nullable();
-            $table->enum('source_type', ['shopify', 'manual'])->default('manual');
-            
+            $table->string('external_product_id')->nullable()->index();
+            $table->enum('source_type', ['shopify', 'tiktok', 'meta', 'manual'])->default('manual');
+            $table->timestamp('last_synced_at')->nullable();
+
             $table->timestamps();
-            
-            // Indexes
-            $table->index('handle');
+
             $table->index('status');
             $table->index('vendor');
             $table->index('product_type');
+            $table->index('source_type');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('order_histories', function (Blueprint $table) {
@@ -23,20 +20,19 @@ return new class extends Migration
                 ->constrained()
                 ->nullOnDelete();
 
-            $table->string('action_type');
+            $table->string('action_type', 50);
+            // status_changed | assigned | note_added | payment_updated | ...
 
             $table->text('old_value')->nullable();
             $table->text('new_value')->nullable();
-
             $table->text('description')->nullable();
 
             $table->timestamps();
+
+            $table->index('action_type');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('order_histories');

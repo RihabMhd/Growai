@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
@@ -32,12 +29,12 @@ return new class extends Migration
                 'whatsapp',
                 'call',
                 'sms',
-                'email'
-            ]);
+                'email',
+            ])->index();
 
             $table->enum('direction', [
                 'incoming',
-                'outgoing'
+                'outgoing',
             ])->default('outgoing');
 
             $table->text('message');
@@ -46,18 +43,19 @@ return new class extends Migration
                 'pending',
                 'sent',
                 'delivered',
-                'failed'
+                'read',
+                'failed',
             ])->default('pending');
 
+            $table->string('external_message_id')->nullable(); // WhatsApp message ID
             $table->timestamp('sent_at')->nullable();
 
             $table->timestamps();
+
+            $table->index(['client_id', 'channel']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('messages');

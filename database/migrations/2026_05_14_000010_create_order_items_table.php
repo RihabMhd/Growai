@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
@@ -23,10 +20,12 @@ return new class extends Migration
                 ->constrained()
                 ->nullOnDelete();
 
+            // Snapshot at order time (product may change later)
             $table->string('product_name');
+            $table->string('variant_title')->nullable(); // e.g. "Rouge / L"
+            $table->string('sku')->nullable();
 
             $table->integer('quantity')->default(1);
-
             $table->decimal('unit_price', 10, 2);
             $table->decimal('total_price', 10, 2);
 
@@ -34,9 +33,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('order_items');

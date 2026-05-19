@@ -6,21 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('teams', function (Blueprint $table) {
             $table->id();
-            $table->string('whatsapp_language', 20)->default('FR');
+
+            // Dispatch & commission settings
+            $table->boolean('dispatch_auto')->default(false);
+            $table->string('inactive_strategy', 50)->default('do_nothing');
+            $table->string('commission_currency', 20)->default('MAD');
+
+            // WhatsApp language
+            $table->string('whatsapp_language', 10)->default('FR');
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('teams');
