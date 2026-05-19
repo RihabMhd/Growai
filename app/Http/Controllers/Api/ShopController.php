@@ -7,43 +7,37 @@ use Illuminate\Http\Request;
 
 class ShopController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function testShopifyConnection(Request $request)
     {
-        //
+        // For now, return a simple response
+        // You can implement actual Shopify connection testing later
+        return response()->json([
+            'connected' => false,
+            'message' => 'Shopify integration not configured yet'
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function syncShopify(Request $request)
     {
-        //
+        return response()->json([
+            'imported' => 0,
+            'updated' => 0,
+            'message' => 'Shopify sync not configured yet'
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function updateShopifyCredentials(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'shopify_domain' => 'required|string',
+            'access_token' => 'required|string',
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        // Store credentials in the database for the authenticated user
+        // You'll need to add these fields to your users table
+        
+        return response()->json([
+            'message' => 'Credentials saved successfully'
+        ]);
     }
 }

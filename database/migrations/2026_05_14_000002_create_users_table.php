@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -21,15 +18,28 @@ return new class extends Migration
 
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('password');
+            $table->string('password')->nullable(); // nullable for social auth
 
-            $table->enum('role', ['admin', 'staff'])
-                ->default('staff');
+            $table->enum('role', ['admin', 'staff'])->default('staff');
 
             $table->boolean('is_active')->default(true);
 
-            $table->rememberToken();
+            // Staff dispatch & commission
+            $table->integer('quota')->default(1);
+            $table->boolean('is_dispatch_active')->default(true);
+            $table->string('commission_trigger', 50)->default('none');
+            // none | confirmed | delivered | paid
+            $table->string('commission_type', 20)->default('fixed');
+            // fixed | percentage
+            $table->decimal('commission_amount', 10, 2)->default(0.00);
+            $table->decimal('wallet_balance', 12, 2)->default(0.00);
 
+            // Social auth (Google, Facebook, etc.)
+            $table->string('provider')->nullable();
+            $table->string('provider_id')->nullable();
+            $table->string('avatar')->nullable();
+
+            $table->rememberToken();
             $table->timestamps();
         });
 
@@ -49,13 +59,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
