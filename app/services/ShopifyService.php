@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class ShopifyService
 {
-    /**
-     * Fetch all products from Shopify store and sync with local database.
-     */
     public function syncProducts(Shop $shop): array
     {
         if (!$shop->shopify_domain || !$shop->access_token) {
@@ -28,15 +25,21 @@ class ShopifyService
                     ->where('external_product_id', (string) $shopifyProduct['id'])
                     ->first();
 
+                $variants = $this->extractVariants($shopifyProduct);
+
                 $productData = [
                     'shop_id' => $shop->id,
                     'external_product_id' => (string) $shopifyProduct['id'],
-                    'name' => $shopifyProduct['title'],
-                    'sku' => $shopifyProduct['variants'][0]['sku'] ?? null,
-                    'price' => (float) ($shopifyProduct['variants'][0]['price'] ?? 0),
-                    'stock' => (int) ($shopifyProduct['variants'][0]['inventory_quantity'] ?? 0),
+                    'title' => $shopifyProduct['title'],
+                    'handle' => $shopifyProduct['handle'] ?? null,
+                    'vendor' => $shopifyProduct['vendor'] ?? null,
+                    'product_type' => $shopifyProduct['product_type'] ?? null,
+                    'description' => $shopifyProduct['body_html'] ?? null,
                     'image' => $this->extractImageUrl($shopifyProduct),
+                    'images' => $this->extractImageUrls($shopifyProduct),
+                    'variants' => $variants,
                     'source_type' => 'shopify',
+                    'status' => 'active',
                 ];
 
                 if ($existingProduct) {
@@ -69,9 +72,6 @@ class ShopifyService
         }
     }
 
-    /**
-     * Fetch products from Shopify API.
-     */
     private function fetchShopifyProducts(Shop $shop): array
     {
         $url = "https://{$shop->shopify_domain}/admin/api/2024-01/products.json";
@@ -89,9 +89,27 @@ class ShopifyService
         return $response->json('products', []);
     }
 
-    /**
-     * Extract main product image URL from Shopify product.
-     */
+    private function extractVariants(array $shopifyProduct): array
+    {
+        if (empty($shopifyProduct['variants'])) {
+            return [];
+        }
+
+        $variants = [];
+        foreach ($shopifyProduct['variants'] as $variant) {
+            $variants[] = [
+                'title' => $variant['title'] ?? 'Default',
+                'sku' => $variant['sku'] ?? null,
+                'price' => floatval($variant['price'] ?? 0),
+                'compare_at_price' => $variant['compare_at_price'] ? floatval($variant['compare_at_price']) : null,
+                'cost' => $variant['cost'] ? floatval($variant['cost']) : null,
+                'stock' => intval($variant['inventory_quantity'] ?? 0),
+            ];
+        }
+
+        return $variants;
+    }
+
     private function extractImageUrl(array $shopifyProduct): ?string
     {
         if (!empty($shopifyProduct['image']['src'])) {
@@ -105,9 +123,21 @@ class ShopifyService
         return null;
     }
 
-    /**
-     * Test Shopify connection.
-     */
+    private function extractImageUrls(array $shopifyProduct): array
+    {
+        $images = [];
+
+        if (!empty($shopifyProduct['images'])) {
+            foreach ($shopifyProduct['images'] as $image) {
+                if (!empty($image['src'])) {
+                    $images[] = ['src' => $image['src']];
+                }
+            }
+        }
+
+        return $images;
+    }
+
     public function testConnection(Shop $shop): bool
     {
         if (!$shop->shopify_domain || !$shop->access_token) {

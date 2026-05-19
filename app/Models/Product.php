@@ -27,6 +27,7 @@ class Product extends Model
         'variants',
         'external_product_id',
         'source_type',
+        'cost',
     ];
 
     protected $casts = [
@@ -41,12 +42,10 @@ class Product extends Model
         'total_stock',
         'min_price',
         'max_price',
-        'default_variant'
+        'default_variant',
+        'type',
     ];
 
-    /**
-     * Boot the model.
-     */
     protected static function boot()
     {
         parent::boot();
@@ -58,82 +57,95 @@ class Product extends Model
         });
     }
 
-
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
-    /**
-     * Get the shop that owns the product.
-     */
+
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
     }
 
-    /**
-     * Get tags as comma-separated string.
-     */
     public function getTagsStringAttribute(): string
     {
         return $this->tags ? implode(', ', $this->tags) : '';
     }
 
-    /**
-     * Set tags from comma-separated string.
-     */
     public function setTagsStringAttribute($value): void
     {
         $this->tags = array_map('trim', explode(',', $value));
     }
 
-    /**
-     * Get total stock from all variants.
-     */
+    public function getTypeAttribute(): ?string
+    {
+        return $this->product_type;
+    }
+
     public function getTotalStockAttribute(): int
     {
-        if (!$this->variants) {
+        if (!$this->variants || !is_array($this->variants)) {
             return 0;
         }
-        
-        return array_sum(array_column($this->variants, 'stock'));
+
+        return array_sum(array_map(function ($v) {
+            return intval($v['stock'] ?? 0);
+        }, $this->variants));
     }
 
-    /**
-     * Get minimum price from all variants.
-     */
     public function getMinPriceAttribute(): float
     {
-        if (!$this->variants) {
+        if (!$this->variants || !is_array($this->variants) || empty($this->variants)) {
             return 0;
         }
-        
-        $prices = array_column($this->variants, 'price');
-        return min($prices);
+
+        $prices = array_filter(array_map(function ($v) {
+            return floatval($v['price'] ?? 0);
+        }, $this->variants));
+
+        return $prices ? min($prices) : 0;
     }
 
-    /**
-     * Get maximum price from all variants.
-     */
     public function getMaxPriceAttribute(): float
     {
-        if (!$this->variants) {
+        if (!$this->variants || !is_array($this->variants) || empty($this->variants)) {
             return 0;
         }
-        
-        $prices = array_column($this->variants, 'price');
-        return max($prices);
+
+        $prices = array_filter(array_map(function ($v) {
+            return floatval($v['price'] ?? 0);
+        }, $this->variants));
+
+        return $prices ? max($prices) : 0;
     }
 
-    /**
-     * Get default variant.
-     */
+    public function getCostAttribute(): float
+    {
+        if ($this->attributes['cost'] ?? null) {
+            return floatval($this->attributes['cost']);
+        }
+
+        if (!$this->variants || !is_array($this->variants) || empty($this->variants)) {
+            return 0;
+        }
+
+        $costs = array_filter(array_map(function ($v) {
+            return floatval($v['cost'] ?? 0);
+        }, $this->variants));
+
+        if (empty($costs)) {
+            return 0;
+        }
+
+        return array_sum($costs) / count($costs);
+    }
+
     public function getDefaultVariantAttribute(): array
     {
         if ($this->variants && count($this->variants) > 0) {
             return $this->variants[0];
         }
-        
+
         return [
             'title' => 'Default Title',
             'price' => 0,
@@ -144,23 +156,17 @@ class Product extends Model
         ];
     }
 
-    /**
-     * Check if product is in stock.
-     */
     public function getInStockAttribute(): bool
     {
         return $this->total_stock > 0;
     }
 
-    /**
-     * Get price range string.
-     */
     public function getPriceRangeAttribute(): string
     {
         if ($this->min_price === $this->max_price) {
             return '$' . number_format($this->min_price, 2);
         }
-        
+
         return '$' . number_format($this->min_price, 2) . ' - $' . number_format($this->max_price, 2);
     }
 }
