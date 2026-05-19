@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\OrderController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\UploadController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -98,3 +98,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/team/settings', [TeamController::class, 'updateSettings']);
     Route::post('/auth/team/impersonate/{id}', [TeamController::class, 'impersonate']);
 });
+Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);

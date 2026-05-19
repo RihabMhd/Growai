@@ -8,7 +8,7 @@ use App\Services\ProductService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
+use App\Models\Shop;
 class ProductController extends Controller
 {
     protected ProductService $productService;
@@ -18,61 +18,58 @@ class ProductController extends Controller
         $this->productService = $productService;
     }
 
+    private function resolveShop(): Shop
+    {
+        $user = auth()->user();
+        $shop = Shop::where('team_id', $user->team_id)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$shop) {
+            abort(403, 'No active shop found for your account.');
+        }
+
+        return $shop;
+    }
+
     public function index(Request $request)
     {
-        try {
-            $filters = $request->only([
-                'shop_id', 'status', 'source_type', 'vendor',
-                'product_type', 'search', 'tag', 'sort_by',
-                'sort_order', 'per_page', 'min_price', 'max_price',
-                'stock_status'
-            ]);
+        $shop = $this->resolveShop();
 
-            $products = $this->productService->getProducts($filters);
+        $filters = $request->only([
+            'status', 'source_type', 'vendor',
+            'product_type', 'search', 'tag',
+            'sort_by', 'sort_order', 'per_page',
+            'min_price', 'stock_status'
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'data' => $products->items(),
-                'current_page' => $products->currentPage(),
-                'last_page' => $products->lastPage(),
-                'per_page' => $products->perPage(),
-                'total' => $products->total(),
-            ]);
+        $filters['shop_id'] = $shop->id; 
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch products',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $products = $this->productService->getProducts($filters);
+
+        return response()->json([
+            'success' => true,
+            'data' => $products->items(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'total' => $products->total(),
+        ]);
     }
 
     public function store(Request $request)
     {
-        try {
-            $validated = $this->validateProduct($request);
+        $shop = $this->resolveShop();
 
-            $product = $this->productService->createProduct($validated);
+        $validated = $this->validateProduct($request);
+        $validated['shop_id'] = $shop->id; // overwrite whatever frontend sent
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Product created successfully',
-                'data' => $product
-            ], 201);
+        $product = $this->productService->createProduct($validated);
 
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to create product',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Product created successfully',
+            'data' => $product
+        ], 201);
     }
 
     public function show($identifier)
@@ -91,7 +88,6 @@ class ProductController extends Controller
                 'success' => true,
                 'data' => $product
             ]);
-
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
@@ -108,66 +104,39 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
-        try {
-            $product = $this->productService->getProduct($id);
+        $shop = $this->resolveShop();
 
-            if (!$product) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Product not found'
-                ], 404);
-            }
+        // Ensure the product belongs to this shop
+        $product = Product::where('id', $id)
+                          ->where('shop_id', $shop->id)
+                          ->firstOrFail();
 
-            $validated = $this->validateProduct($request, $product);
+        $validated = $this->validateProduct($request, $product);
+        $validated['shop_id'] = $shop->id;
 
-            $product = $this->productService->updateProduct($product, $validated);
+        $product = $this->productService->updateProduct($product, $validated);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Product updated successfully',
-                'data' => $product
-            ]);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to update product',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Product updated successfully',
+            'data' => $product
+        ]);
     }
 
-    public function destroy($id)
+     public function destroy($id)
     {
-        try {
-            $product = $this->productService->getProduct($id);
+        $shop = $this->resolveShop();
 
-            if (!$product) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Product not found'
-                ], 404);
-            }
+        $product = Product::where('id', $id)
+                          ->where('shop_id', $shop->id)
+                          ->firstOrFail();
 
-            $this->productService->deleteProduct($product);
+        $this->productService->deleteProduct($product);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Product deleted successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to delete product',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully'
+        ]);
     }
 
     public function summary(Request $request)
@@ -180,7 +149,6 @@ class ProductController extends Controller
                 'success' => true,
                 'data' => $summary
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -209,7 +177,6 @@ class ProductController extends Controller
                 'message' => 'Product duplicated successfully',
                 'data' => $newProduct
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -233,7 +200,6 @@ class ProductController extends Controller
                 'success' => true,
                 'message' => "{$count} products deleted successfully"
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -263,7 +229,6 @@ class ProductController extends Controller
                 'success' => true,
                 'message' => "{$count} products updated successfully"
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -291,7 +256,6 @@ class ProductController extends Controller
                 'last_page' => $products->lastPage(),
                 'total' => $products->total(),
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -322,7 +286,6 @@ class ProductController extends Controller
                 'last_page' => $products->lastPage(),
                 'total' => $products->total(),
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -344,7 +307,6 @@ class ProductController extends Controller
             : 'unique:products,handle';
 
         $rules = [
-            'shop_id' => 'required|exists:shops,id',
             'title' => 'required|string|max:255',
             'vendor' => 'nullable|string|max:255',
             'product_type' => 'nullable|string|max:255',
@@ -352,7 +314,7 @@ class ProductController extends Controller
             'status' => 'in:active,draft,archived',
             'tags' => 'nullable|string',
             'tags_string' => 'nullable|string',
-            'image' => 'nullable|url',
+            'image' => 'nullable|string|max:500',
             'images' => 'nullable|array',
             'description' => 'nullable|string',
             'variants' => 'nullable|array',
