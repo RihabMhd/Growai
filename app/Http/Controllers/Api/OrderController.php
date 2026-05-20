@@ -27,7 +27,7 @@ class OrderController extends Controller
 
         $query = Order::query()
             ->with(['items.product', 'client', 'shop', 'assignedAgent'])
-            ->latest();
+            ->orderBy('created_at', 'desc');
 
         // 1. Role-based visibility
         if ($user->role === 'staff') {
@@ -45,23 +45,44 @@ class OrderController extends Controller
             $query->where('order_number', 'like', "%{$search}%");
         }
 
-        // 3. Abandoned filter
-        $isAbandoned = $request->input('type') === 'abandoned';
-        $query->where('is_abandoned', $isAbandoned);
+        // 3. Abandoned filter - only apply if type is specified
+        if ($request->filled('type')) {
+            $isAbandoned = $request->input('type') === 'abandoned';
+            $query->where('is_abandoned', $isAbandoned);
+        }
 
         // 4. Status filter
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status', $request->input('status'));
         }
 
-        // 5. Fetch
-        $orders = $query->get();
+        // 5. Paginate results
+        $perPage = $request->input('per_page', 15);
+        $orders = $query->paginate($perPage);
 
-        // 6. Metrics
-        $totalOrders    = $orders->count();
-        $confirmedCount = $orders->filter(fn($o) => in_array($o->status, ['confirmed', 'delivered', 'processing', 'shipped']))->count();
-        $cancelledCount = $orders->filter(fn($o) => in_array($o->status, ['cancelled', 'returned']))->count();
-        $pendingCount   = $orders->filter(fn($o) => $o->status === 'pending')->count();
+        // 6. Calculate metrics from the filtered query (not the paginated collection)
+        $metricsQuery = Order::query();
+        
+        // Apply same filters for metrics
+        if ($user->role === 'staff') {
+            $assignedProductIds = $user->products()->pluck('products.id')->toArray();
+            if (count($assignedProductIds) > 0) {
+                $metricsQuery->whereHas('items', function ($q) use ($assignedProductIds) {
+                    $q->whereIn('product_id', $assignedProductIds);
+                });
+            }
+        }
+        if ($request->filled('search')) {
+            $metricsQuery->where('order_number', 'like', "%{$request->input('search')}%");
+        }
+        if ($request->filled('type')) {
+            $metricsQuery->where('is_abandoned', $request->input('type') === 'abandoned');
+        }
+
+        $totalOrders    = $metricsQuery->count();
+        $confirmedCount = (clone $metricsQuery)->whereIn('status', ['confirmed', 'delivered', 'processing', 'shipped'])->count();
+        $cancelledCount = (clone $metricsQuery)->whereIn('status', ['cancelled', 'returned'])->count();
+        $pendingCount   = (clone $metricsQuery)->where('status', 'pending')->count();
         $confirmationRate = $totalOrders > 0 ? round(($confirmedCount / $totalOrders) * 100) : 0;
 
         return response()->json([

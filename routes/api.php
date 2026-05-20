@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\OrderStatusController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ShipmentController;
+use App\Http\Controllers\Api\DeliveryCompanyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UploadController;
 /*
@@ -40,6 +42,9 @@ Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/tag/{tag}', [ProductController::class, 'getByTag']);
 Route::get('/products-summary', [ProductController::class, 'summary']);
 
+// Webhook routes (public - for carrier callbacks)
+Route::post('/shipments/webhook/{companyId}', [ShipmentController::class, 'handleWebhook']);
+
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -68,9 +73,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/assign', [OrderController::class, 'assign']);
     });
     
-    // Order status management routes
-    Route::apiResource('order-statuses', OrderStatusController::class);
-    Route::post('/order-statuses/{id}/toggle-auto-send', [OrderStatusController::class, 'toggleAutoSend']);
+    // Shipment management routes
+    Route::prefix('shipments')->group(function () {
+        Route::get('/', [ShipmentController::class, 'index']);
+        Route::post('/', [ShipmentController::class, 'store']);
+        Route::get('/{id}', [ShipmentController::class, 'show']);
+        Route::put('/{id}', [ShipmentController::class, 'update']);
+        Route::delete('/{id}', [ShipmentController::class, 'destroy']);
+        Route::get('/{id}/tracking', [ShipmentController::class, 'getTracking']);
+    });
+
+    // Delivery company management routes
+    Route::prefix('companies')->group(function () {
+        Route::get('/', [DeliveryCompanyController::class, 'index']);
+        Route::get('/{id}', [DeliveryCompanyController::class, 'show']);
+        Route::post('/{id}/connect', [DeliveryCompanyController::class, 'connect']);
+        Route::post('/{id}/disconnect', [DeliveryCompanyController::class, 'disconnect']);
+        Route::post('/{id}/enable-updates', [DeliveryCompanyController::class, 'enableOrdersUpdates']);
+        Route::post('/{id}/disable-updates', [DeliveryCompanyController::class, 'disableOrdersUpdates']);
+        Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
+    });
+
     
     // Product management routes (full CRUD with authentication)
     Route::apiResource('products', ProductController::class);
