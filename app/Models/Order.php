@@ -23,6 +23,7 @@ class Order extends Model
     protected $fillable = [
         'shop_id',
         'client_id',
+        'assigned_to',
         'order_number',
         'total_price',
         'shipping_price',
@@ -30,11 +31,11 @@ class Order extends Model
         'currency',
         'status',
         'financial_status',
-        'notes',
+        'commission_paid',
         'is_abandoned',
         'abandoned_at',
-        'assigned_to',
-        'commission_paid'
+        'notes',
+        'source_channel',  
     ];
 
     protected $casts = [

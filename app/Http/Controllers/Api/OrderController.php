@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
-use App\Models\User;
+use App\Models\OrderSource;
 use App\Models\OrderHistory;
+use App\Models\Product;
+use App\Models\Client;
+use App\Models\Shop;
+use App\Models\Shipment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -20,229 +24,306 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+
         $query = Order::query()
             ->with(['items.product', 'client', 'shop', 'assignedAgent'])
             ->latest();
 
-        // 1. Apply role-based visibility restrictions
+        // 1. Role-based visibility
         if ($user->role === 'staff') {
             $assignedProductIds = $user->products()->pluck('products.id')->toArray();
-            
-            // If the agent has assigned products: only see orders containing at least one of their assigned products
             if (count($assignedProductIds) > 0) {
-                $query->whereHas('items', function ($itemQuery) use ($assignedProductIds) {
-                    $itemQuery->whereIn('product_id', $assignedProductIds);
+                $query->whereHas('items', function ($q) use ($assignedProductIds) {
+                    $q->whereIn('product_id', $assignedProductIds);
                 });
             }
-            // If they have no assigned products: they see all orders
         }
 
-        // 2. Filter by Search Query (name, phone, order number)
+        // 2. Search by order number
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%");
-            });
+            $query->where('order_number', 'like', "%{$search}%");
         }
 
-        // 3. Filter by Type (abandoned vs normal)
+        // 3. Abandoned filter
         $isAbandoned = $request->input('type') === 'abandoned';
         $query->where('is_abandoned', $isAbandoned);
 
-        // 4. Filter by Status Tab
+        // 4. Status filter
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status', $request->input('status'));
         }
 
-        // 5. Fetch all matching orders
+        // 5. Fetch
         $orders = $query->get();
 
-        // 6. Calculate premium metric summary based ONLY on visible orders
-        $totalOrders = $orders->count();
+        // 6. Metrics
+        $totalOrders    = $orders->count();
         $confirmedCount = $orders->filter(fn($o) => in_array($o->status, ['confirmed', 'delivered', 'processing', 'shipped']))->count();
         $cancelledCount = $orders->filter(fn($o) => in_array($o->status, ['cancelled', 'returned']))->count();
-        $pendingCount = $orders->filter(fn($o) => $o->status === 'pending')->count();
-        
-        $confirmationRate = $totalOrders > 0 
-            ? round(($confirmedCount / $totalOrders) * 100) 
-            : 0;
+        $pendingCount   = $orders->filter(fn($o) => $o->status === 'pending')->count();
+        $confirmationRate = $totalOrders > 0 ? round(($confirmedCount / $totalOrders) * 100) : 0;
 
         return response()->json([
-            'orders' => $orders,
+            'orders'  => $orders,
             'metrics' => [
-                'total_orders' => $totalOrders,
-                'confirmed' => $confirmedCount,
-                'cancelled' => $cancelledCount,
-                'pending' => $pendingCount,
-                'confirmation_rate' => $confirmationRate . '%'
+                'total_orders'      => $totalOrders,
+                'confirmed'         => $confirmedCount,
+                'cancelled'         => $cancelledCount,
+                'pending'           => $pendingCount,
+                'confirmation_rate' => $confirmationRate . '%',
             ],
-            // For admin's manual assignment dropdown, return active agents
-            'active_agents' => $user->role === 'admin' 
-                ? User::where('role', 'staff')->where('is_active', true)->get() 
-                : []
+            'active_agents' => $user->role === 'admin'
+                ? User::where('role', 'staff')->where('is_active', true)->get()
+                : [],
         ]);
     }
 
     /**
-     * Store a newly created order (triggers auto-dispatch).
+     * Store a manually created order.
+     *
+     * Uses the existing schema correctly:
+     *  - Customer data   → clients table
+     *  - Shipping address → shipments table
+     *  - Source/channel  → order_sources table + orders.source_channel (denormalized)
+     *  - Products        → order_items table
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'notes' => 'nullable|string',
-            'is_abandoned' => 'nullable|boolean',
-            'items' => 'required|array|min:1',
+            // Customer
+            'customer_name'    => 'required|string|max:255',
+            'customer_phone'   => 'required|string|max:30',
+            'customer_email'   => 'nullable|email|max:255',
+
+            // Address (goes to shipments + clients)
+            'province'         => 'nullable|string|max:100',
+            'city'             => 'nullable|string|max:100',
+            'street'           => 'nullable|string|max:255',
+
+            // Source channel
+            'source'           => 'nullable|string|max:30',
+
+            // Order meta
+            'notes'            => 'nullable|string',
+            'is_abandoned'     => 'nullable|boolean',
+            'shipping_price'   => 'nullable|numeric|min:0',
+
+            // Items
+            'items'            => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1'
+            'items.*.quantity'   => 'required|integer|min:1',
         ]);
 
-        // Find default client and shop (or fallback)
-        $client = \App\Models\Client::first();
-        if (!$client) {
-            $client = \App\Models\Client::create([
-                'name' => 'Client Par Défaut',
-                'email' => 'client@growai.com'
-            ]);
-        }
+        // Find or create the client record (match by phone — the natural key)
+        $client = Client::firstOrCreate(
+            ['phone' => $validated['customer_phone']],
+            [
+                'name'     => $validated['customer_name'],
+                'email'    => $validated['customer_email'] ?? null,
+                'city'     => $validated['city'] ?? null,
+                'province' => $validated['province'] ?? null,
+                'address'  => $validated['street'] ?? null,
+            ]
+        );
 
-        $shop = \App\Models\Shop::first();
-        if (!$shop) {
-            $shop = \App\Models\Shop::create([
-                'client_id' => $client->id,
-                'name' => 'Boutique Flash',
-                'url' => 'https://shopify.flashmanager.com'
-            ]);
-        }
+        // If client already existed, update their name/email/address in case they changed
+        $client->update([
+            'name'     => $validated['customer_name'],
+            'email'    => $validated['customer_email'] ?? $client->email,
+            'city'     => $validated['city'] ?? $client->city,
+            'province' => $validated['province'] ?? $client->province,
+            'address'  => $validated['street'] ?? $client->address,
+        ]);
 
-        // Run in transaction
+        // Use the first available shop (or null for manual orders with no shop)
+        $shop = Shop::first();
+
         $order = DB::transaction(function () use ($validated, $client, $shop) {
-            // 1. Create order skeleton
+
+            // 1. Create the order
             $order = Order::create([
-                'shop_id' => $shop->id,
-                'client_id' => $client->id,
-                'order_number' => 'ORD-' . strtoupper(Str::random(8)),
-                'total_price' => 0.00,
-                'shipping_price' => 10.00, // standard shipping fee
-                'discount' => 0.00,
-                'currency' => 'DA',
-                'status' => 'pending',
+                'shop_id'        => $shop?->id,
+                'client_id'      => $client->id,
+                'order_number'   => 'ORD-' . strtoupper(Str::random(8)),
+                'total_price'    => 0.00,
+                'shipping_price' => (float) ($validated['shipping_price'] ?? 0),
+                'discount'       => 0.00,
+                'currency'       => 'MAD',
+                'status'         => 'pending',
                 'financial_status' => 'unpaid',
-                'notes' => $validated['notes'] ?? null,
-                'is_abandoned' => $validated['is_abandoned'] ?? false,
-                'abandoned_at' => ($validated['is_abandoned'] ?? false) ? now() : null
+                'notes'          => $validated['notes'] ?? null,
+                'source_channel' => $validated['source'] ?? 'manual',
+                'is_abandoned'   => $validated['is_abandoned'] ?? false,
+                'abandoned_at'   => ($validated['is_abandoned'] ?? false) ? now() : null,
             ]);
 
-            // 2. Create order items and aggregate price
-            $totalPrice = 0.00;
+            // 2. Create order items and calculate total
+            $subtotal = 0.00;
             foreach ($validated['items'] as $itemData) {
-                $product = Product::findOrFail($itemData['product_id']);
-                $qty = (int) $itemData['quantity'];
-                $itemTotal = (float) $product->price * $qty;
-                $totalPrice += $itemTotal;
+                $product  = Product::findOrFail($itemData['product_id']);
+                $qty      = (int) $itemData['quantity'];
+
+                // Price: use first variant price if available, else cost, else 0
+                $unitPrice = 0;
+                if (!empty($product->variants)) {
+                    $variants  = is_array($product->variants) ? $product->variants : json_decode($product->variants, true);
+                    $unitPrice = (float) ($variants[0]['price'] ?? $product->cost ?? 0);
+                } else {
+                    $unitPrice = (float) ($product->cost ?? 0);
+                }
+
+                $lineTotal = $unitPrice * $qty;
+                $subtotal += $lineTotal;
 
                 OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'quantity' => $qty,
-                    'unit_price' => $product->price,
-                    'total_price' => $itemTotal
+                    'order_id'     => $order->id,
+                    'product_id'   => $product->id,
+                    'product_name' => $product->title,
+                    'quantity'     => $qty,
+                    'unit_price'   => $unitPrice,
+                    'total_price'  => $lineTotal,
                 ]);
             }
 
-            // 3. Save final prices (order items + shipping)
-            $order->update([
-                'total_price' => $totalPrice + 10.00
+            // 3. Update order total (subtotal + shipping)
+            $shippingPrice = (float) ($validated['shipping_price'] ?? 0);
+            $order->update(['total_price' => $subtotal + $shippingPrice]);
+
+            // 4. Create order source record (full tracking in order_sources table)
+            if (!empty($validated['source'])) {
+                OrderSource::create([
+                    'order_id' => $order->id,
+                    'type'     => $validated['source'],
+                    'platform' => $validated['source'],
+                ]);
+            }
+
+            // 5. Create a shipment record with the delivery address
+            if (!empty($validated['city']) || !empty($validated['province']) || !empty($validated['street'])) {
+                Shipment::create([
+                    'order_id'         => $order->id,
+                    'delivery_company_id' => null, // will be assigned later
+                    'status'           => 'pending',
+                    'recipient_name'   => $validated['customer_name'],
+                    'recipient_phone'  => $validated['customer_phone'],
+                    'address'          => implode(', ', array_filter([
+                        $validated['street']   ?? null,
+                        $validated['city']     ?? null,
+                        $validated['province'] ?? null,
+                    ])),
+                    'city'             => $validated['city'] ?? null,
+                    'region'           => $validated['province'] ?? null,
+                    'country'          => 'MA',
+                    'cod_amount'       => $subtotal + (float) ($validated['shipping_price'] ?? 0),
+                ]);
+            }
+
+            // 6. Log creation in order history
+            OrderHistory::create([
+                'order_id'    => $order->id,
+                'user_id'     => auth()->id(),
+                'action_type' => 'status_changed',
+                'old_value'   => null,
+                'new_value'   => 'pending',
+                'description' => 'Commande créée manuellement.',
             ]);
 
             return $order;
         });
 
-        // Load relations and observer changes
-        $order->load(['items.product', 'assignedAgent']);
+        $order->load(['items.product', 'client', 'assignedAgent']);
 
         return response()->json([
             'message' => 'Commande créée avec succès !',
-            'order' => $order
+            'order'   => $order,
         ], 201);
     }
 
     /**
-     * Display the specified order details with history.
+     * Display the specified order with full history.
      */
     public function show(string $id)
     {
         $order = Order::with(['items.product', 'client', 'shop', 'assignedAgent', 'histories.user'])
             ->findOrFail($id);
 
-        return response()->json([
-            'order' => $order
-        ]);
+        return response()->json(['order' => $order]);
     }
 
     /**
-     * Update the order status (triggers commission payout).
+     * Update order status or financial status.
      */
     public function update(Request $request, string $id)
     {
         $order = Order::findOrFail($id);
 
         $validated = $request->validate([
-            'status' => 'nullable|string|in:pending,confirmed,processing,shipped,delivered,cancelled,returned',
+            'status'           => 'nullable|string',
             'financial_status' => 'nullable|string|in:unpaid,pending,paid,refunded',
-            'notes' => 'nullable|string'
+            'notes'            => 'nullable|string',
         ]);
 
+        $oldStatus = $order->status;
         $order->update($validated);
+
+        // Log status change in history
+        if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
+            OrderHistory::create([
+                'order_id'    => $order->id,
+                'user_id'     => $request->user()->id,
+                'action_type' => 'status_changed',
+                'old_value'   => $oldStatus,
+                'new_value'   => $validated['status'],
+                'description' => "Statut changé de '{$oldStatus}' à '{$validated['status']}'.",
+            ]);
+        }
+
         $order->load(['items.product', 'assignedAgent', 'histories.user']);
 
         return response()->json([
             'message' => 'Commande mise à jour avec succès.',
-            'order' => $order
+            'order'   => $order,
         ]);
     }
 
     /**
-     * Manually assign an agent to the order (Admin only).
+     * Manually assign an agent (admin only).
      */
     public function assign(Request $request, string $id)
     {
         if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent assigner des agents.'], 403);
+            return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
         $order = Order::findOrFail($id);
 
         $validated = $request->validate([
-            'assigned_to' => 'nullable|exists:users,id'
+            'assigned_to' => 'nullable|exists:users,id',
         ]);
 
-        $agentId = $validated['assigned_to'];
-        $oldAgentName = $order->assignedAgent ? $order->assignedAgent->name : 'Non assigné';
-        
-        $order->updateQuietly([
-            'assigned_to' => $agentId
-        ]);
+        $agentId     = $validated['assigned_to'];
+        $oldAgentName = $order->assignedAgent?->name ?? 'Non assigné';
 
-        $newAgent = $agentId ? User::find($agentId) : null;
-        $newAgentName = $newAgent ? $newAgent->name : 'Non assigné';
+        $order->updateQuietly(['assigned_to' => $agentId]);
 
-        // Add history log
+        $newAgent     = $agentId ? User::find($agentId) : null;
+        $newAgentName = $newAgent?->name ?? 'Non assigné';
+
         OrderHistory::create([
-            'order_id' => $order->id,
-            'user_id' => $request->user()->id,
-            'action_type' => 'status',
-            'old_value' => $oldAgentName,
-            'new_value' => $newAgentName,
-            'description' => "Commande assignée manuellement par l'administrateur de '{$oldAgentName}' à '{$newAgentName}'."
+            'order_id'    => $order->id,
+            'user_id'     => $request->user()->id,
+            'action_type' => 'assigned',
+            'old_value'   => $oldAgentName,
+            'new_value'   => $newAgentName,
+            'description' => "Assigné de '{$oldAgentName}' à '{$newAgentName}'.",
         ]);
 
         $order->load(['items.product', 'assignedAgent']);
 
         return response()->json([
             'message' => 'Agent assigné avec succès.',
-            'order' => $order
+            'order'   => $order,
         ]);
     }
 }
