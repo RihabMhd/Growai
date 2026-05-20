@@ -143,7 +143,7 @@ class ShopifyService
         if (!$shop->shopify_domain || !$shop->access_token) {
             return false;
         }
-
+        
         try {
             $url = "https://{$shop->shopify_domain}/admin/api/2024-01/shop.json";
             $response = Http::withToken($shop->access_token)->get($url);
