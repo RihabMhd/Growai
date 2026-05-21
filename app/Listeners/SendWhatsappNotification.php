@@ -8,6 +8,7 @@ use App\Models\OrderStatus;
 use App\Models\Team;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SendWhatsappNotification implements ShouldQueue
@@ -21,6 +22,20 @@ class SendWhatsappNotification implements ShouldQueue
     {
         $order     = $event->order;
         $newStatus = $event->newStatus;
+
+        // ── Duplicate guard ───────────────────────────────────────────────────
+        // Prevents sending twice if the listener is accidentally fired more
+        // than once for the same order + status (e.g. sync driver quirk,
+        // double event dispatch, etc.).
+        $lockKey = "whatsapp_lock_{$order->id}_{$newStatus}";
+
+        if (!Cache::add($lockKey, true, now()->addSeconds(30))) {
+            Log::info('WhatsApp skipped: duplicate prevented by lock', [
+                'order_id' => $order->id,
+                'status'   => $newStatus,
+            ]);
+            return;
+        }
 
         try {
             // 1. Look up the OrderStatus record and check the auto_send flag
@@ -40,9 +55,9 @@ class SendWhatsappNotification implements ShouldQueue
 
             if (empty($message) || empty($phoneNumber)) {
                 Log::warning('WhatsApp skipped: missing message or phone', [
-                    'order_id'     => $order->id,
-                    'phone_empty'  => empty($phoneNumber),
-                    'message_empty'=> empty($message),
+                    'order_id'      => $order->id,
+                    'phone_empty'   => empty($phoneNumber),
+                    'message_empty' => empty($message),
                 ]);
                 return;
             }

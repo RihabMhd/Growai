@@ -131,5 +131,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // If you keep company statuses in a separate table, duplicate the routes for that controller.
     Route::post('/company-statuses/{id}/auto-send',    [OrderStatusController::class, 'toggleAutoSend']);
     Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
+    Route::get('/order-statuses', [OrderStatusController::class, 'index']);
 });
 Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);
