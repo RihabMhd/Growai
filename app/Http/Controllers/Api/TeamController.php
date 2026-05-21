@@ -227,7 +227,10 @@ class TeamController extends Controller
         $validated = $request->validate([
             'dispatch_auto' => 'nullable|boolean',
             'inactive_strategy' => 'nullable|string|in:do_nothing,transfer,redistribute',
-            'commission_currency' => 'nullable|string'
+            'commission_currency' => 'nullable|string',
+            'order_prefix' => 'nullable|string|max:10',
+            'country' => 'nullable|string|max:5',
+            'exchange_rate' => 'nullable|numeric|min:0'
         ]);
 
         $team->update($validated);

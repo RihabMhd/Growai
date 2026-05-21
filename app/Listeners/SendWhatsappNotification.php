@@ -3,9 +3,9 @@
 namespace App\Listeners;
 
 use App\Events\OrderStatusChanged;
+use App\Jobs\SendWhatsappMessageJob;
 use App\Models\OrderStatus;
 use App\Models\Team;
-use App\Services\WhatsAppService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -15,92 +15,74 @@ class SendWhatsappNotification implements ShouldQueue
     use InteractsWithQueue;
 
     /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
-
-    /**
-     * Handle the event - sends WhatsApp message when order status changes.
+     * Handle the event — dispatches a queued job to send the WhatsApp message.
      */
     public function handle(OrderStatusChanged $event): void
     {
-        $order = $event->order;
+        $order     = $event->order;
         $newStatus = $event->newStatus;
 
         try {
-            // 1. Find the OrderStatus record to check auto_send flag
+            // 1. Look up the OrderStatus record and check the auto_send flag
             $status = OrderStatus::where('slug', $newStatus)->first();
 
             if (!$status || !$status->auto_send) {
                 Log::info('WhatsApp skipped: auto_send is disabled', [
                     'order_id' => $order->id,
-                    'status' => $newStatus,
+                    'status'   => $newStatus,
                 ]);
                 return;
             }
 
-            // 2. Resolve the message template
-            $message = $this->resolveMessage($status, $order);
+            // 2. Resolve the template for the team's preferred language
+            $message     = $this->resolveMessage($status, $order);
             $phoneNumber = $order->client?->phone;
 
             if (empty($message) || empty($phoneNumber)) {
                 Log::warning('WhatsApp skipped: missing message or phone', [
-                    'order_id' => $order->id,
-                    'phone_empty' => empty($phoneNumber),
-                    'message_empty' => empty($message),
+                    'order_id'     => $order->id,
+                    'phone_empty'  => empty($phoneNumber),
+                    'message_empty'=> empty($message),
                 ]);
                 return;
             }
 
-            // 3. Send via WhatsApp
-            $whatsappService = app(WhatsAppService::class);
-            $response = $whatsappService->send($phoneNumber, $message);
+            // 3. Dispatch a queued job (retries are handled there)
+            SendWhatsappMessageJob::dispatch($phoneNumber, $message, $order->id);
 
-            Log::info('WhatsApp message sent successfully', [
+            Log::info('WhatsApp job dispatched', [
                 'order_id' => $order->id,
-                'phone' => $phoneNumber,
-                'status_code' => $response->status(),
+                'phone'    => $phoneNumber,
+                'status'   => $newStatus,
             ]);
 
         } catch (\Throwable $e) {
-            Log::error('WhatsApp send failed', [
+            Log::error('WhatsApp dispatch failed', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error'    => $e->getMessage(),
+                'trace'    => $e->getTraceAsString(),
             ]);
         }
     }
 
-    /**
-     * Resolve the WhatsApp message for this status + order.
-     */
+    // ── Private helpers ───────────────────────────────────────────────────────
+
     private function resolveMessage(OrderStatus $status, object $order): string
     {
         $templates = $status->templates ?? [];
 
-        // Global language: stored on the Team, falls back to FR
         $team = Team::first();
         $lang = $team?->whatsapp_language ?? 'FR';
 
-        // Pick best template: chosen language → FR fallback → legacy single message
+        // Priority: team language → FR → legacy single field
         $template = $templates[$lang]
             ?? $templates['FR']
             ?? $status->whatsapp_message
             ?? '';
 
-        if (empty($template)) {
-            return '';
-        }
-
-        return $this->replacePlaceholders($template, $order);
+        return empty($template) ? '' : $this->replacePlaceholders($template, $order);
     }
 
-    /**
-     * Replace all {{placeholder}} tokens in a template string.
-     */
     private function replacePlaceholders(string $template, object $order): string
     {
         $team = Team::first();
@@ -123,9 +105,6 @@ class SendWhatsappNotification implements ShouldQueue
         );
     }
 
-    /**
-     * Get the name of the first product in the order.
-     */
     private function getFirstProductName(object $order): string
     {
         return $order->items()->with('product')->first()?->product?->name ?? '';
