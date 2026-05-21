@@ -132,5 +132,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/company-statuses/{id}/auto-send',    [OrderStatusController::class, 'toggleAutoSend']);
     Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
     Route::get('/order-statuses', [OrderStatusController::class, 'index']);
+
+    Route::get('/team/settings',  [TeamController::class, 'settings']);
+    Route::post('/team/settings', [TeamController::class, 'updateSettings']);
 });
 Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);
