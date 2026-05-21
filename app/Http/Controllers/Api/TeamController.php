@@ -125,7 +125,7 @@ class TeamController extends Controller
             \Illuminate\Support\Facades\Log::warning('SMTP Mail sending failed: ' . $e->getMessage());
         }
 
-        $message = $emailSent 
+        $message = $emailSent
             ? "Membre ajouté avec succès ! Un e-mail d'invitation avec ses identifiants a été envoyé à " . $validated['email'] . "."
             : "Membre ajouté avec succès ! E-mail d'invitation simulé car le SMTP n'est pas configuré. Mot de passe temporaire : " . $tempPassword;
 
@@ -207,38 +207,6 @@ class TeamController extends Controller
     }
 
     /**
-     * Update global team settings.
-     */
-    public function updateSettings(Request $request)
-    {
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Non autorisé.'], 403);
-        }
-
-        $team = Team::first();
-        if (!$team) {
-            $team = Team::create([
-                'dispatch_auto' => false,
-                'inactive_strategy' => 'do_nothing',
-                'commission_currency' => 'DZ DA'
-            ]);
-        }
-
-        $validated = $request->validate([
-            'dispatch_auto' => 'nullable|boolean',
-            'inactive_strategy' => 'nullable|string|in:do_nothing,transfer,redistribute',
-            'commission_currency' => 'nullable|string'
-        ]);
-
-        $team->update($validated);
-
-        return response()->json([
-            'message' => 'Paramètres de l\'équipe enregistrés.',
-            'team' => $team
-        ]);
-    }
-
-    /**
      * Remove a member from the team.
      */
     public function destroyMember(Request $request, $id)
@@ -260,6 +228,44 @@ class TeamController extends Controller
 
         return response()->json([
             'message' => 'Membre supprimé avec succès.'
+        ]);
+    }
+
+    /**
+     * GET /api/team/settings
+     * Returns the current team settings the frontend needs.
+     */
+    public function settings()
+    {
+        $team = Team::first();
+
+        return response()->json([
+            'whatsapp_language' => $team?->whatsapp_language ?? 'FR',
+        ]);
+    }
+
+    /**
+     * POST /api/team/settings
+     * Body: { "whatsapp_language": "FR" | "AR" | "FR/AR" | "Darija AR" | "Darija FR" }
+     */
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'whatsapp_language' => ['required', 'string', 'in:FR,AR,FR/AR,Darija AR,Darija FR'],
+        ]);
+
+        $team = Team::first();
+
+        if (!$team) {
+            return response()->json(['message' => 'No team found.'], 404);
+        }
+
+        $team->whatsapp_language = $validated['whatsapp_language'];
+        $team->save();
+
+        return response()->json([
+            'success'            => true,
+            'whatsapp_language'  => $team->whatsapp_language,
         ]);
     }
 }

@@ -47,13 +47,16 @@ Route::post('/shipments/webhook/{companyId}', [ShipmentController::class, 'handl
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // User authentication routes
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::put('/profile', [AuthController::class, 'updateProfile']);
+        Route::put('/password', [AuthController::class, 'updatePassword']);
+        Route::post('/2fa/toggle', [AuthController::class, 'toggle2FA']);
     });
-    
+
     // Team management routes
     Route::prefix('team')->group(function () {
         Route::get('/', [TeamController::class, 'index']);
@@ -63,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/settings', [TeamController::class, 'updateSettings']);
         Route::post('/impersonate/{id}', [TeamController::class, 'impersonate']);
     });
-    
+
     // Order management routes
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
@@ -72,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::post('/{id}/assign', [OrderController::class, 'assign']);
     });
-    
+
     // Shipment management routes
     Route::prefix('shipments')->group(function () {
         Route::get('/', [ShipmentController::class, 'index']);
@@ -94,10 +97,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
 
-    
+
     // Product management routes (full CRUD with authentication)
     Route::apiResource('products', ProductController::class);
-    
+
     // Additional product routes
     Route::prefix('products')->group(function () {
         Route::post('/{id}/duplicate', [ProductController::class, 'duplicate']);
@@ -105,7 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/bulk/status', [ProductController::class, 'bulkUpdateStatus']);
         Route::get('/summary', [ProductController::class, 'summary']);
     });
-    
+
     // Shop/Shopify integration routes
     Route::prefix('shop')->group(function () {
         Route::get('/test-shopify-connection', [ShopController::class, 'testShopifyConnection']);
@@ -120,5 +123,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/auth/team/members/{id}', [TeamController::class, 'destroyMember']);
     Route::post('/auth/team/settings', [TeamController::class, 'updateSettings']);
     Route::post('/auth/team/impersonate/{id}', [TeamController::class, 'impersonate']);
+
+    Route::post('/order-statuses/{id}/auto-send',      [OrderStatusController::class, 'toggleAutoSend']);
+    Route::post('/order-statuses/{id}/save-template',  [OrderStatusController::class, 'saveTemplate']);
+
+    // Company statuses reuse the same controller/table — the "slug" differentiates them.
+    // If you keep company statuses in a separate table, duplicate the routes for that controller.
+    Route::post('/company-statuses/{id}/auto-send',    [OrderStatusController::class, 'toggleAutoSend']);
+    Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
+    Route::get('/order-statuses', [OrderStatusController::class, 'index']);
+
+    Route::get('/team/settings',  [TeamController::class, 'settings']);
+    Route::post('/team/settings', [TeamController::class, 'updateSettings']);
 });
 Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);

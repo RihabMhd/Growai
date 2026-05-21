@@ -41,8 +41,7 @@ class OrderStatusController extends Controller
     /**
      * Toggle (or explicitly set) auto_send for a status.
      *
-     * The frontend sends { auto_send: true|false }.
-     * If no body is sent we fall back to flipping the current value.
+     * Body: { auto_send: true|false }   (omit to flip current value)
      */
     public function toggleAutoSend(Request $request, $id)
     {
@@ -55,5 +54,50 @@ class OrderStatusController extends Controller
         $orderStatus->save();
 
         return response()->json($orderStatus);
+    }
+
+    /**
+     * Persist multi-language WhatsApp templates and auto_send flag.
+     *
+     * Body:
+     * {
+     *   "templates":       { "FR": "...", "AR": "...", ... },
+     *   "auto_send":       true | false,          // optional
+     *   "whatsapp_message": "..."                 // optional legacy field
+     * }
+     *
+     * Route: PUT /order-statuses/{id}   (reuses existing update route)
+     *        or add a dedicated route:
+     *        POST /order-statuses/{id}/save-template
+     */
+    public function saveTemplate(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'templates'         => ['nullable', 'array'],
+            'templates.*'       => ['nullable', 'string', 'max:4096'],
+            'auto_send'         => ['nullable', 'boolean'],
+            'whatsapp_message'  => ['nullable', 'string', 'max:4096'],
+        ]);
+
+        $orderStatus = OrderStatus::findOrFail($id);
+
+        if (array_key_exists('templates', $validated)) {
+            $orderStatus->templates = $validated['templates'];
+        }
+
+        if (array_key_exists('auto_send', $validated)) {
+            $orderStatus->auto_send = (bool) $validated['auto_send'];
+        }
+
+        if (array_key_exists('whatsapp_message', $validated)) {
+            $orderStatus->whatsapp_message = $validated['whatsapp_message'];
+        }
+
+        $orderStatus->save();
+
+        return response()->json([
+            'success'      => true,
+            'order_status' => $orderStatus,
+        ]);
     }
 }

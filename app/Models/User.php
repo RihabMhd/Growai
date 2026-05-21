@@ -29,7 +29,9 @@ class User extends Authenticatable
         'commission_amount',
         'commission_type',
         'wallet_balance',
-        'avatar'
+        'avatar',
+        'whatsapp',
+        'two_factor_enabled',
     ];
 
     /**
@@ -78,6 +80,7 @@ class User extends Authenticatable
             'is_dispatch_active' => 'boolean',
             'wallet_balance' => 'float',
             'is_active' => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

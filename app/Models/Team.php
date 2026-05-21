@@ -14,7 +14,15 @@ class Team extends Model
         'description',
         'dispatch_auto',
         'inactive_strategy',
-        'commission_currency'
+        'commission_currency',
+        'order_prefix',
+        'country',
+        'exchange_rate'
+    ];
+
+    protected $casts = [
+        'dispatch_auto' => 'boolean',
+        'exchange_rate' => 'float',
     ];
 
     public function users()

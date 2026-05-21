@@ -162,11 +162,14 @@ class OrderController extends Controller
 
         $order = DB::transaction(function () use ($validated, $client, $shop) {
 
+            $team = \App\Models\Team::first();
+            $prefix = ($team && $team->order_prefix) ? $team->order_prefix : 'ORD';
+
             // 1. Create the order
             $order = Order::create([
                 'shop_id'        => $shop?->id,
                 'client_id'      => $client->id,
-                'order_number'   => 'ORD-' . strtoupper(Str::random(8)),
+                'order_number'   => $prefix . '-' . strtoupper(Str::random(8)),
                 'total_price'    => 0.00,
                 'shipping_price' => (float) ($validated['shipping_price'] ?? 0),
                 'discount'       => 0.00,

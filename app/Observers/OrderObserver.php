@@ -3,11 +3,10 @@
 namespace App\Observers;
 
 use App\Events\OrderStatusChanged;
-use App\Models\OrderStatus;
 use App\Models\Order;
-use App\Models\User;
-use App\Models\Team;
 use App\Models\OrderHistory;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class OrderObserver
@@ -104,6 +103,10 @@ class OrderObserver
 
     /**
      * Handle the Order "updated" event.
+     *
+     * WhatsApp notifications are handled entirely by SendWhatsappNotification
+     * listener via the OrderStatusChanged event — do NOT add direct WhatsApp
+     * calls here to avoid duplicate messages.
      */
     public function updated(Order $order): void
     {
@@ -124,46 +127,10 @@ class OrderObserver
             'description' => "Statut de la commande modifié de '{$oldStatus}' à '{$newStatus}'.",
         ]);
 
-        // ── 2. Fire broadcast event ───────────────────────────────────────────
+        // ── 2. Fire event — triggers broadcast + WhatsApp via listener ────────
         OrderStatusChanged::dispatch($order, $oldStatus, $newStatus);
 
-        // ── 3. WhatsApp auto-send ─────────────────────────────────────────────
-        $status = OrderStatus::where('slug', $newStatus)->first();
-
-        if ($status && $status->auto_send) {
-            $message = $this->resolveMessage($status, $order);
-            $phoneNumber = $order->client?->phone;
-
-            Log::info('WhatsApp auto-send check', [
-                'order_id' => $order->id,
-                'status_found' => $status ? 'yes' : 'no',
-                'auto_send' => $status->auto_send ? 'yes' : 'no',
-                'message_empty' => empty($message) ? 'yes' : 'no',
-                'phone_empty' => empty($phoneNumber) ? 'yes' : 'no',
-                'phone' => $phoneNumber,
-            ]);
-
-            if (!empty($message) && !empty($phoneNumber)) {
-                try {
-                    /** @var \App\Services\WhatsAppService $whatsappService */
-                    $whatsappService = app(\App\Services\WhatsAppService::class);
-                    $response = $whatsappService->send($phoneNumber, $message);
-                    Log::info('WhatsApp message sent successfully', [
-                        'order_id' => $order->id,
-                        'phone' => $phoneNumber,
-                        'response_status' => $response->status(),
-                        'response_body' => $response->body(),
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::error('WhatsApp send failed', [
-                        'order_id' => $order->id,
-                        'error'    => $e->getMessage(),
-                    ]);
-                }
-            }
-        }
-
-        // ── 4. Commission handling ────────────────────────────────────────────
+        // ── 3. Commission handling ────────────────────────────────────────────
         if ($order->assigned_to && !$order->commission_paid) {
             $agent = User::find($order->assigned_to);
 
@@ -193,73 +160,5 @@ class OrderObserver
                 }
             }
         }
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /**
-     * Resolve the WhatsApp message for this status + order.
-     *
-     * Priority:
-     *   1. templates[order_lang]  – per-language template saved from the UI
-     *   2. templates['FR']        – French fallback
-     *   3. whatsapp_message       – legacy single-message fallback
-     *
-     * The order's language is read from $order->language (e.g. "FR", "AR",
-     * "Darija FR", …). You can also store it on the Team model if you want a
-     * global default instead.
-     */
-    private function resolveMessage(OrderStatus $status, Order $order): string
-    {
-        $templates = $status->templates ?? [];
-
-        // Global language: stored on the Team, falls back to FR
-        $team = Team::first();
-        $lang = $team?->whatsapp_language ?? 'FR';
-
-        // Pick best template: chosen language → FR fallback → legacy single message
-        $template = $templates[$lang]
-            ?? $templates['FR']
-            ?? $status->whatsapp_message
-            ?? '';
-
-        if (empty($template)) {
-            return '';
-        }
-
-        return $this->replacePlaceholders($template, $order);
-    }
-
-    /**
-     * Replace all {{placeholder}} tokens in a template string.
-     */
-    private function replacePlaceholders(string $template, Order $order): string
-    {
-        $team = Team::first();
-
-        $placeholders = [
-            '{{order_id}}'       => $order->id,
-            '{{status}}'         => $order->status,
-            '{{customer_name}}'  => $order->client?->name   ?? '',
-            '{{customer_phone}}' => $order->client?->phone  ?? '',
-            '{{total}}'          => $order->total_price     ?? '',
-            '{{shop_name}}'      => $team?->name            ?? config('app.name'),
-            '{{product_name}}'   => $this->getFirstProductName($order),
-            '{{currency}}'       => $order->currency        ?? 'MAD',
-        ];
-
-        return str_replace(
-            array_keys($placeholders),
-            array_values($placeholders),
-            $template
-        );
-    }
-
-    /**
-     * Get the name of the first product in the order (for {{product_name}}).
-     */
-    private function getFirstProductName(Order $order): string
-    {
-        return $order->items()->with('product')->first()?->product?->name ?? '';
     }
 }
