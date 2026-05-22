@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\Auth\PasswordController;
@@ -10,47 +12,84 @@ use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ShipmentController;
 use App\Http\Controllers\Api\DeliveryCompanyController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\ShopifyWebhookController;
 use App\Http\Controllers\Api\ShopifyController;
+use App\Http\Controllers\Api\ShopifyAuthController;
+
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
-// Public routes (no authentication required)
 Route::prefix('auth')->group(function () {
-    // Email login
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']); // Add this if you have registration
-
-    // Password reset
+    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/forgot-password', [PasswordController::class, 'forgotPassword']);
     Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
 
-    // Social authentication
     Route::get('/google/redirect', [SocialAuthController::class, 'googleRedirect']);
     Route::get('/google/callback', [SocialAuthController::class, 'googleCallback']);
+
     Route::get('/facebook/redirect', [SocialAuthController::class, 'facebookRedirect']);
     Route::get('/facebook/callback', [SocialAuthController::class, 'facebookCallback']);
+
+    // Shopify OAuth (must be public — browser redirects, no Bearer token)
+    Route::get('/shopify/redirect', [ShopifyAuthController::class, 'redirect']);
+    Route::get('/shopify/callback', [ShopifyAuthController::class, 'callback']);
 });
 
-// Public product routes (optional - if you want public access)
-Route::get('/products/public', [ProductController::class, 'index']); // Public product listing
-Route::get('/products/public/{product}', [ProductController::class, 'show']); // Public product view
+/*
+|--------------------------------------------------------------------------
+| Public Product Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/products/public', [ProductController::class, 'index']);
+Route::get('/products/public/{product}', [ProductController::class, 'show']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/tag/{tag}', [ProductController::class, 'getByTag']);
 Route::get('/products-summary', [ProductController::class, 'summary']);
 
-// Webhook routes (public - for carrier callbacks)
+/*
+|--------------------------------------------------------------------------
+| Webhooks (public — signed by HMAC, no Bearer token)
+|--------------------------------------------------------------------------
+*/
+
 Route::post('/shipments/webhook/{companyId}', [ShipmentController::class, 'handleWebhook']);
 
-// Protected routes (require authentication)
+Route::post('/webhooks/shopify/{shopDomain}', [ShopifyWebhookController::class, 'handle'])
+    ->name('shopify.webhook');
+
+/*
+|--------------------------------------------------------------------------
+| Shopify Integration (public — called on page load before auth check)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('shopify')->group(function () {
+    Route::get('/status', [ShopifyController::class, 'status']);
+    Route::post('/sync-products', [ShopifyController::class, 'syncProducts']);
+    Route::get('/products', [ShopifyController::class, 'products']);
+    Route::get('/orders', [ShopifyController::class, 'orders']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth:sanctum')->group(function () {
 
-    // User authentication routes
+    /*
+    |------------------------------------------------------------------
+    | Authentication
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -59,17 +98,28 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/2fa/toggle', [AuthController::class, 'toggle2FA']);
     });
 
-    // Team management routes
+    /*
+    |------------------------------------------------------------------
+    | Team Management
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('team')->group(function () {
         Route::get('/', [TeamController::class, 'index']);
         Route::post('/members', [TeamController::class, 'storeMember']);
         Route::put('/members/{id}', [TeamController::class, 'updateMember']);
         Route::delete('/members/{id}', [TeamController::class, 'destroyMember']);
+        Route::get('/settings', [TeamController::class, 'settings']);
         Route::post('/settings', [TeamController::class, 'updateSettings']);
         Route::post('/impersonate/{id}', [TeamController::class, 'impersonate']);
     });
 
-    // Order management routes
+    /*
+    |------------------------------------------------------------------
+    | Orders
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::post('/', [OrderController::class, 'store']);
@@ -78,7 +128,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/assign', [OrderController::class, 'assign']);
     });
 
-    // Shipment management routes
+    /*
+    |------------------------------------------------------------------
+    | Shipments
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('shipments')->group(function () {
         Route::get('/', [ShipmentController::class, 'index']);
         Route::post('/', [ShipmentController::class, 'store']);
@@ -88,7 +143,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/tracking', [ShipmentController::class, 'getTracking']);
     });
 
-    // Delivery company management routes
+    /*
+    |------------------------------------------------------------------
+    | Delivery Companies
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('companies')->group(function () {
         Route::get('/', [DeliveryCompanyController::class, 'index']);
         Route::get('/{id}', [DeliveryCompanyController::class, 'show']);
@@ -99,11 +159,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
 
+    /*
+    |------------------------------------------------------------------
+    | Products
+    |------------------------------------------------------------------
+    */
 
-    // Product management routes (full CRUD with authentication)
     Route::apiResource('products', ProductController::class);
 
-    // Additional product routes
     Route::prefix('products')->group(function () {
         Route::post('/{id}/duplicate', [ProductController::class, 'duplicate']);
         Route::delete('/bulk/delete', [ProductController::class, 'bulkDestroy']);
@@ -111,49 +174,35 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/summary', [ProductController::class, 'summary']);
     });
 
-    // Shop/Shopify integration routes
+    /*
+    |------------------------------------------------------------------
+    | Shop Settings
+    |------------------------------------------------------------------
+    */
+
     Route::prefix('shop')->group(function () {
         Route::get('/test-shopify-connection', [ShopController::class, 'testShopifyConnection']);
         Route::get('/sync-shopify', [ShopController::class, 'syncShopify']);
         Route::post('/shopify-credentials', [ShopController::class, 'updateShopifyCredentials']);
     });
 
-    //api/auth/team/members
-    Route::get('/auth/team/members', [TeamController::class, 'index']);
-    Route::post('/auth/team/members', [TeamController::class, 'storeMember']);
-    Route::put('/auth/team/members/{id}', [TeamController::class, 'updateMember']);
-    Route::delete('/auth/team/members/{id}', [TeamController::class, 'destroyMember']);
-    Route::post('/auth/team/settings', [TeamController::class, 'updateSettings']);
-    Route::post('/auth/team/impersonate/{id}', [TeamController::class, 'impersonate']);
+    /*
+    |------------------------------------------------------------------
+    | Order Statuses
+    |------------------------------------------------------------------
+    */
 
-    Route::post('/order-statuses/{id}/auto-send',      [OrderStatusController::class, 'toggleAutoSend']);
-    Route::post('/order-statuses/{id}/save-template',  [OrderStatusController::class, 'saveTemplate']);
-
-    // Company statuses reuse the same controller/table — the "slug" differentiates them.
-    // If you keep company statuses in a separate table, duplicate the routes for that controller.
-    Route::post('/company-statuses/{id}/auto-send',    [OrderStatusController::class, 'toggleAutoSend']);
-    Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
     Route::get('/order-statuses', [OrderStatusController::class, 'index']);
+    Route::post('/order-statuses/{id}/auto-send', [OrderStatusController::class, 'toggleAutoSend']);
+    Route::post('/order-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
+    Route::post('/company-statuses/{id}/auto-send', [OrderStatusController::class, 'toggleAutoSend']);
+    Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
 
-    Route::get('/team/settings',  [TeamController::class, 'settings']);
-    Route::post('/team/settings', [TeamController::class, 'updateSettings']);
-    Route::post('/shopify/sync', [ShopifyController::class, 'syncProducts'])
-        ->name('shopify.sync');
+    /*
+    |------------------------------------------------------------------
+    | Uploads
+    |------------------------------------------------------------------
+    */
 
-    // Connection status
-    Route::get('/shopify/status', [ShopifyController::class, 'status'])
-        ->name('shopify.status');
-
-    // List synced products
-    Route::get('/shopify/products', [ShopifyController::class, 'products'])
-        ->name('shopify.products');
-
-    // List synced orders
-    Route::get('/shopify/orders', [ShopifyController::class, 'orders'])
-        ->name('shopify.orders');
+    Route::post('/upload', [UploadController::class, 'store']);
 });
-Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);
-Route::post(
-    '/webhooks/shopify/{shopDomain}',
-    [ShopifyWebhookController::class, 'handle']
-)->name('shopify.webhook');

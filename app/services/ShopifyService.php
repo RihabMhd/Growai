@@ -74,13 +74,11 @@ class ShopifyService
 
     private function fetchShopifyProducts(Shop $shop): array
     {
-        $url = "https://{$shop->shopify_domain}/admin/api/2024-01/products.json";
+        $url = "https://{$shop->shopify_domain}/admin/api/2025-01/products.json";
 
-        $response = Http::withToken($shop->access_token)
-            ->get($url, [
-                'limit' => 250,
-                'status' => 'active',
-            ]);
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $shop->access_token,
+        ])->get($url);
 
         if (!$response->successful()) {
             throw new \Exception('Failed to fetch Shopify products: ' . $response->body());
@@ -98,12 +96,12 @@ class ShopifyService
         $variants = [];
         foreach ($shopifyProduct['variants'] as $variant) {
             $variants[] = [
-                'title' => $variant['title'] ?? 'Default',
-                'sku' => $variant['sku'] ?? null,
-                'price' => floatval($variant['price'] ?? 0),
-                'compare_at_price' => $variant['compare_at_price'] ? floatval($variant['compare_at_price']) : null,
-                'cost' => $variant['cost'] ? floatval($variant['cost']) : null,
-                'stock' => intval($variant['inventory_quantity'] ?? 0),
+                'title'            => $variant['title']            ?? 'Default',
+                'sku'              => $variant['sku']              ?? null,
+                'price'            => floatval($variant['price']   ?? 0),
+                'compare_at_price' => isset($variant['compare_at_price']) ? floatval($variant['compare_at_price']) : null,
+                'cost'             => isset($variant['cost'])      ? floatval($variant['cost']) : null,
+                'stock'            => intval($variant['inventory_quantity'] ?? 0),
             ];
         }
 
@@ -141,15 +139,30 @@ class ShopifyService
     public function testConnection(Shop $shop): bool
     {
         if (!$shop->shopify_domain || !$shop->access_token) {
+            Log::error('Shopify testConnection: missing domain or token', [
+                'domain' => $shop->shopify_domain,
+                'has_token' => !empty($shop->access_token),
+            ]);
             return false;
         }
-        
+
         try {
-            $url = "https://{$shop->shopify_domain}/admin/api/2024-01/shop.json";
-            $response = Http::withToken($shop->access_token)->get($url);
+            $url = "https://{$shop->shopify_domain}/admin/api/2025-01/shop.json";
+
+            Log::info('Shopify testConnection: calling', ['url' => $url]);
+
+            $response = Http::withHeaders([
+                'X-Shopify-Access-Token' => $shop->access_token,
+            ])->get($url);
+
+            Log::info('Shopify testConnection: response', [
+                'status' => $response->status(),
+                'body'   => substr($response->body(), 0, 300),
+            ]);
+
             return $response->successful();
         } catch (\Exception $e) {
-            Log::error('Shopify connection test failed', ['error' => $e->getMessage()]);
+            Log::error('Shopify testConnection: exception', ['error' => $e->getMessage()]);
             return false;
         }
     }
