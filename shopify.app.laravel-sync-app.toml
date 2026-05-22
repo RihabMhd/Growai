@@ -1,0 +1,18 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "2b18290b170dc9bafb09b261ae428051"
+application_url = "https://duke-devoutly-appear.ngrok-free.dev"
+embedded = true
+name = "Laravel Sync App"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_orders,write_orders,read_products"
+optional_scopes = [ "write_products" ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://duke-devoutly-appear.ngrok-free.dev/shopify/callback" ]
+
+[webhooks]
+api_version = "2026-04"

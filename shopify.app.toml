@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "e08be8c779d684632d43fffada3fcfbb"
+name = "growai"
+application_url = "http://localhost:8000"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_inventory,read_inventory,read_orders,write_orders,read_products,write_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "http://localhost:8000/auth/callback",
+  "http://localhost:8000/api/auth/callback"
+]

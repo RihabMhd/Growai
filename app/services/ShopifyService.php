@@ -76,11 +76,9 @@ class ShopifyService
     {
         $url = "https://{$shop->shopify_domain}/admin/api/2024-01/products.json";
 
-        $response = Http::withToken($shop->access_token)
-            ->get($url, [
-                'limit' => 250,
-                'status' => 'active',
-            ]);
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $shop->access_token,
+        ])->get($url);
 
         if (!$response->successful()) {
             throw new \Exception('Failed to fetch Shopify products: ' . $response->body());
@@ -143,10 +141,12 @@ class ShopifyService
         if (!$shop->shopify_domain || !$shop->access_token) {
             return false;
         }
-        
+
         try {
             $url = "https://{$shop->shopify_domain}/admin/api/2024-01/shop.json";
-            $response = Http::withToken($shop->access_token)->get($url);
+            $response = Http::withHeaders([
+                'X-Shopify-Access-Token' => $shop->access_token,
+            ])->get($url);
             return $response->successful();
         } catch (\Exception $e) {
             Log::error('Shopify connection test failed', ['error' => $e->getMessage()]);

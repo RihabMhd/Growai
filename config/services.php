@@ -49,4 +49,11 @@ return [
         'token'    => env('WHATSAPP_TOKEN'),
         'from'     => env('WHATSAPP_FROM'),
     ],
+
+    'shopify' => [
+        'shop'           => env('SHOPIFY_SHOP'),
+        'access_token'   => env('SHOPIFY_ACCESS_TOKEN'),
+        'api_version'    => env('SHOPIFY_API_VERSION', '2026-01'),
+        'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET', ''),
+    ],
 ];
