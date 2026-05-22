@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\ShipmentController;
 use App\Http\Controllers\Api\DeliveryCompanyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\ShopifyWebhookController;
+use App\Http\Controllers\Api\ShopifyController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -135,5 +137,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/team/settings',  [TeamController::class, 'settings']);
     Route::post('/team/settings', [TeamController::class, 'updateSettings']);
+    Route::post('/shopify/sync', [ShopifyController::class, 'syncProducts'])
+        ->name('shopify.sync');
+
+    // Connection status
+    Route::get('/shopify/status', [ShopifyController::class, 'status'])
+        ->name('shopify.status');
+
+    // List synced products
+    Route::get('/shopify/products', [ShopifyController::class, 'products'])
+        ->name('shopify.products');
+
+    // List synced orders
+    Route::get('/shopify/orders', [ShopifyController::class, 'orders'])
+        ->name('shopify.orders');
 });
 Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);
+Route::post(
+    '/webhooks/shopify/{shopDomain}',
+    [ShopifyWebhookController::class, 'handle']
+)->name('shopify.webhook');
