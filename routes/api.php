@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\ShopifyWebhookController;
 use App\Http\Controllers\Api\ShopifyController;
 use App\Http\Controllers\Api\ShopifyAuthController;
-use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,10 +24,8 @@ use Illuminate\Support\Facades\Http;
 */
 
 Route::prefix('auth')->group(function () {
-
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
-
     Route::post('/forgot-password', [PasswordController::class, 'forgotPassword']);
     Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
 
@@ -37,6 +34,10 @@ Route::prefix('auth')->group(function () {
 
     Route::get('/facebook/redirect', [SocialAuthController::class, 'facebookRedirect']);
     Route::get('/facebook/callback', [SocialAuthController::class, 'facebookCallback']);
+
+    // Shopify OAuth (must be public — browser redirects, no Bearer token)
+    Route::get('/shopify/redirect', [ShopifyAuthController::class, 'redirect']);
+    Route::get('/shopify/callback', [ShopifyAuthController::class, 'callback']);
 });
 
 /*
@@ -53,16 +54,27 @@ Route::get('/products-summary', [ProductController::class, 'summary']);
 
 /*
 |--------------------------------------------------------------------------
-| Webhooks
+| Webhooks (public — signed by HMAC, no Bearer token)
 |--------------------------------------------------------------------------
 */
 
 Route::post('/shipments/webhook/{companyId}', [ShipmentController::class, 'handleWebhook']);
 
-Route::post(
-    '/webhooks/shopify/{shopDomain}',
-    [ShopifyWebhookController::class, 'handle']
-)->name('shopify.webhook');
+Route::post('/webhooks/shopify/{shopDomain}', [ShopifyWebhookController::class, 'handle'])
+    ->name('shopify.webhook');
+
+/*
+|--------------------------------------------------------------------------
+| Shopify Integration (public — called on page load before auth check)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('shopify')->group(function () {
+    Route::get('/status', [ShopifyController::class, 'status']);
+    Route::post('/sync-products', [ShopifyController::class, 'syncProducts']);
+    Route::get('/products', [ShopifyController::class, 'products']);
+    Route::get('/orders', [ShopifyController::class, 'orders']);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -164,23 +176,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |------------------------------------------------------------------
-    | Shopify Integration
-    |------------------------------------------------------------------
-    */
-
-    Route::prefix('shopify')->group(function () {
-
-        Route::get('/status', [ShopifyController::class, 'status']);
-
-        Route::post('/sync-products', [ShopifyController::class, 'syncProducts']);
-
-        Route::get('/products', [ShopifyController::class, 'products']);
-
-        Route::get('/orders', [ShopifyController::class, 'orders']);
-    });
-
-    /*
-    |------------------------------------------------------------------
     | Shop Settings
     |------------------------------------------------------------------
     */
@@ -191,11 +186,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/shopify-credentials', [ShopController::class, 'updateShopifyCredentials']);
     });
 
-    Route::prefix('auth/shopify')->group(function () {
-        Route::post('/connect', [ShopifyAuthController::class, 'connect']);
-        Route::post('/disconnect', [ShopifyAuthController::class, 'disconnect']);
-    });
-
     /*
     |------------------------------------------------------------------
     | Order Statuses
@@ -203,20 +193,16 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/order-statuses', [OrderStatusController::class, 'index']);
-
     Route::post('/order-statuses/{id}/auto-send', [OrderStatusController::class, 'toggleAutoSend']);
-
     Route::post('/order-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
-
     Route::post('/company-statuses/{id}/auto-send', [OrderStatusController::class, 'toggleAutoSend']);
-
     Route::post('/company-statuses/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
+
+    /*
+    |------------------------------------------------------------------
+    | Uploads
+    |------------------------------------------------------------------
+    */
+
+    Route::post('/upload', [UploadController::class, 'store']);
 });
-
-/*
-|--------------------------------------------------------------------------
-| Uploads
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth:sanctum')->post('/upload', [UploadController::class, 'store']);

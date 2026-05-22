@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -13,7 +15,9 @@ class ShopifyAuthController extends Controller
     {
         $shop  = config('services.shopify.shop');
         $state = Str::random(40);
-        session(['shopify_state' => $state]);
+
+        // Use cache instead of session (API routes are stateless)
+        Cache::put('shopify_oauth_state_' . $state, true, now()->addMinutes(10));
 
         $query = http_build_query([
             'client_id'    => config('services.shopify.client_id'),
@@ -27,7 +31,10 @@ class ShopifyAuthController extends Controller
 
     public function callback(Request $request)
     {
-        if ($request->query('state') !== session('shopify_state')) {
+        $state = $request->query('state');
+
+        // Verify state exists in cache
+        if (!$state || !Cache::pull('shopify_oauth_state_' . $state)) {
             abort(403, 'Invalid state.');
         }
 
@@ -48,7 +55,11 @@ class ShopifyAuthController extends Controller
 
         Shop::updateOrCreate(
             ['shopify_domain' => $shop],
-            ['access_token' => $accessToken, 'is_active' => true]
+            [
+                'name'         => $shop, 
+                'access_token' => $accessToken,
+                'is_active'    => true,
+            ]
         );
 
         return redirect(config('app.frontend_url') . '/integrations/shopify?connected=1');

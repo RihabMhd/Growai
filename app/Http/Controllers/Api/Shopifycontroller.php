@@ -25,20 +25,17 @@ class ShopifyController extends Controller
         $shop = $this->resolveShop($request);
 
         if (!$shop) {
-            return response()->json([
-                'connected' => false,
-            ]);
+            return response()->json(['connected' => false]);
         }
 
         $connected = $this->shopifyService->testConnection($shop);
 
         return response()->json([
             'connected'      => $connected,
+            'shop_id'        => $shop->id,          // ← add this
             'domain'         => $shop->shopify_domain,
             'last_synced_at' => $shop->last_synced_at?->toISOString(),
-            'product_count'  => Product::where('shop_id', $shop->id)
-                ->where('status', 'active')
-                ->count(),
+            'product_count'  => Product::where('shop_id', $shop->id)->where('status', 'active')->count(),
             'order_count'    => Order::where('shop_id', $shop->id)->count(),
         ]);
     }
@@ -143,13 +140,18 @@ class ShopifyController extends Controller
         $shopId = $request->query('shop_id')
             ?? $request->user()?->shop_id;
 
-        if (!$shopId) {
-            return null;
+        if ($shopId) {
+            return Shop::where('id', $shopId)
+                ->where('is_active', true)
+                ->whereNotNull('access_token')
+                ->first();
         }
 
-        return Shop::where('id', $shopId)
-            ->where('is_active', true)
+        // Fall back to the latest connected Shopify shop
+        return Shop::where('is_active', true)
             ->whereNotNull('access_token')
+            ->where('platform', 'shopify')
+            ->latest()
             ->first();
     }
 }

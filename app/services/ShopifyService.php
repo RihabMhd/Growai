@@ -74,7 +74,7 @@ class ShopifyService
 
     private function fetchShopifyProducts(Shop $shop): array
     {
-        $url = "https://{$shop->shopify_domain}/admin/api/2024-01/products.json";
+        $url = "https://{$shop->shopify_domain}/admin/api/2025-01/products.json";
 
         $response = Http::withHeaders([
             'X-Shopify-Access-Token' => $shop->access_token,
@@ -137,20 +137,33 @@ class ShopifyService
     }
 
     public function testConnection(Shop $shop): bool
-    {
-        if (!$shop->shopify_domain || !$shop->access_token) {
-            return false;
-        }
-
-        try {
-            $url = "https://{$shop->shopify_domain}/admin/api/2024-01/shop.json";
-            $response = Http::withHeaders([
-                'X-Shopify-Access-Token' => $shop->access_token,
-            ])->get($url);
-            return $response->successful();
-        } catch (\Exception $e) {
-            Log::error('Shopify connection test failed', ['error' => $e->getMessage()]);
-            return false;
-        }
+{
+    if (!$shop->shopify_domain || !$shop->access_token) {
+        Log::error('Shopify testConnection: missing domain or token', [
+            'domain' => $shop->shopify_domain,
+            'has_token' => !empty($shop->access_token),
+        ]);
+        return false;
     }
+
+    try {
+        $url = "https://{$shop->shopify_domain}/admin/api/2025-01/shop.json";
+        
+        Log::info('Shopify testConnection: calling', ['url' => $url]);
+        
+        $response = Http::withHeaders([
+            'X-Shopify-Access-Token' => $shop->access_token,
+        ])->get($url);
+
+        Log::info('Shopify testConnection: response', [
+            'status' => $response->status(),
+            'body'   => substr($response->body(), 0, 300),
+        ]);
+
+        return $response->successful();
+    } catch (\Exception $e) {
+        Log::error('Shopify testConnection: exception', ['error' => $e->getMessage()]);
+        return false;
+    }
+}
 }

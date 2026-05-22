@@ -51,9 +51,11 @@ return [
     ],
 
     'shopify' => [
-        'shop'           => env('SHOPIFY_SHOP'),
-        'access_token'   => env('SHOPIFY_ACCESS_TOKEN'),
-        'api_version'    => env('SHOPIFY_API_VERSION', '2026-01'),
+        'shop'         => env('SHOPIFY_SHOP'),
+        'client_id'    => env('SHOPIFY_CLIENT_ID'),
+        'client_secret' => env('SHOPIFY_CLIENT_SECRET'),
+        'redirect_uri' => env('SHOPIFY_REDIRECT_URI'),
+        'api_version'  => env('SHOPIFY_API_VERSION', '2026-01'),
         'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET', ''),
     ],
 ];
