@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\ShopifyWebhookController;
 use App\Http\Controllers\Api\ShopifyController;
 use App\Http\Controllers\Api\ShopifyAuthController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,6 +89,7 @@ Route::delete('/shopify/shops/{shop}',   [ShopifyController::class, 'disconnectS
 
 Route::middleware('auth:sanctum')->group(function () {
 
+     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     /*
     |------------------------------------------------------------------
     | Authentication
