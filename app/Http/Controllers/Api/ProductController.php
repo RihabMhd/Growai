@@ -21,8 +21,7 @@ class ProductController extends Controller
     private function resolveShop(): Shop
     {
         $user = auth()->user();
-        $shop = Shop::where('team_id', $user->team_id)
-            ->where('is_active', true)
+        $shop = Shop::where('is_active', true)
             ->first();
 
         if (!$shop) {

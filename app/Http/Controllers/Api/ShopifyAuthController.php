@@ -13,7 +13,9 @@ class ShopifyAuthController extends Controller
 {
     public function redirect(Request $request)
     {
-        $shop  = config('services.shopify.shop');
+        // Allow the frontend to pass a specific shop domain (multi-store flow).
+        // Falls back to the default shop configured in services.shopify.shop.
+        $shop  = $request->query('shop') ?? config('services.shopify.shop');
         $state = Str::random(40);
 
         // Use cache instead of session (API routes are stateless)
