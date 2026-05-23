@@ -14,7 +14,21 @@ class Shop extends Model
         'platform',
         'shopify_domain',
         'access_token',
-        'is_active'
+        'is_active',
+        'boutique_name',
+        'last_synced_at',
+        'webhook_secret',
+    ];
+
+    protected $casts = [
+        'is_active'      => 'boolean',
+        'last_synced_at' => 'datetime',
+    ];
+
+    // Never expose the raw access token or webhook secret in JSON responses
+    protected $hidden = [
+        'access_token',
+        'webhook_secret',
     ];
 
     public function products()

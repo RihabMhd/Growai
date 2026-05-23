@@ -76,6 +76,10 @@ Route::prefix('shopify')->group(function () {
     Route::get('/orders', [ShopifyController::class, 'orders']);
 });
 
+Route::get   ('/shopify/shops',          [ShopifyController::class, 'listShops']);
+Route::patch ('/shopify/shops/{shop}',   [ShopifyController::class, 'updateShop']);
+Route::delete('/shopify/shops/{shop}',   [ShopifyController::class, 'disconnectShop']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes
