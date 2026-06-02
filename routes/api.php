@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\ShopifyWebhookController;
 use App\Http\Controllers\Api\ShopifyController;
 use App\Http\Controllers\Api\ShopifyAuthController;
 use App\Http\Controllers\Api\DashboardController;
-
+use App\Http\Controllers\Api\ClientController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -212,4 +212,10 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::post('/upload', [UploadController::class, 'store']);
+
+
+    Route::get('/clients',        [ClientController::class, 'index']);
+    Route::get('/clients/{id}',   [ClientController::class, 'show']);
+    Route::put('/clients/{id}',   [ClientController::class, 'update']);
+    Route::delete('/clients/{id}',[ClientController::class, 'destroy']);
 });

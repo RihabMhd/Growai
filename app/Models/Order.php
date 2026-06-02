@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +36,7 @@ class Order extends Model
         'is_abandoned',
         'abandoned_at',
         'notes',
-        'source_channel',  
+        'source_channel',
     ];
 
     protected $casts = [
@@ -49,7 +50,7 @@ class Order extends Model
 
     public function client()
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(Client::class, 'client_id');
     }
 
     public function shop()
@@ -86,10 +87,9 @@ class Order extends Model
     {
         return $this->hasMany(Message::class);
     }
-    
-    public function statusModel() { 
-        return $this->belongsTo(OrderStatus::class, 'status', 'slug'); 
+
+    public function statusModel()
+    {
+        return $this->belongsTo(OrderStatus::class, 'status', 'slug');
     }
-
-
 }

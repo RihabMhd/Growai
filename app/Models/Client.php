@@ -14,16 +14,17 @@ class Client extends Model
         'phone',
         'email',
         'city',
-        'province',
         'address',
-        'notes'
+        'notes',
     ];
 
+    /**
+     * Relationship used by OrderController when loading orders with client.
+     */
     public function orders()
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(Order::class, 'client_id');
     }
-
     public function messages()
     {
         return $this->hasMany(Message::class);
