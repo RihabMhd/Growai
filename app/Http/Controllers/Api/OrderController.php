@@ -26,7 +26,7 @@ class OrderController extends Controller
         $user = $request->user();
 
         $query = Order::query()
-            ->with(['items.product', 'client', 'shop', 'assignedAgent'])
+            ->with(['items.product', 'client', 'shop', 'assignedAgent', 'shipments'])
             ->orderBy('created_at', 'desc');
 
         // 1. Role-based visibility
@@ -56,9 +56,8 @@ class OrderController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        // 5. Paginate results
-        $perPage = $request->input('per_page', 15);
-        $orders = $query->paginate($perPage);
+        // 5. Get all matching results (frontend expects a flat array instead of pagination object)
+        $orders = $query->get();
 
         // 6. Calculate metrics from the filtered query (not the paginated collection)
         $metricsQuery = Order::query();
@@ -269,7 +268,7 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        $order = Order::with(['items.product', 'client', 'shop', 'assignedAgent', 'histories.user'])
+        $order = Order::with(['items.product', 'client', 'shop', 'assignedAgent', 'histories.user', 'shipments'])
             ->findOrFail($id);
 
         return response()->json(['order' => $order]);
@@ -280,16 +279,121 @@ class OrderController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $order = Order::findOrFail($id);
+        $order = Order::with(['client', 'items', 'shipments'])->findOrFail($id);
 
         $validated = $request->validate([
             'status'           => 'nullable|string',
             'financial_status' => 'nullable|string|in:unpaid,pending,paid,refunded',
             'notes'            => 'nullable|string',
+            
+            // Client editing
+            'customer_name'    => 'nullable|string|max:255',
+            'customer_phone'   => 'nullable|string|max:30',
+            'customer_email'   => 'nullable|email|max:255',
+
+            // Address editing (shipment + client)
+            'province'         => 'nullable|string|max:100',
+            'city'             => 'nullable|string|max:100',
+            'street'           => 'nullable|string|max:255',
+            'shipping_price'   => 'nullable|numeric|min:0',
+
+            // Items editing
+            'items'            => 'nullable|array',
+            'items.*.product_id' => 'required_with:items|exists:products,id',
+            'items.*.quantity'   => 'required_with:items|integer|min:1',
         ]);
 
         $oldStatus = $order->status;
-        $order->update($validated);
+
+        DB::transaction(function () use ($validated, $order) {
+            // 1. Update status and notes on the order
+            $orderData = [];
+            if (isset($validated['status'])) $orderData['status'] = $validated['status'];
+            if (isset($validated['financial_status'])) $orderData['financial_status'] = $validated['financial_status'];
+            if (isset($validated['notes'])) $orderData['notes'] = $validated['notes'];
+            if (isset($validated['shipping_price'])) $orderData['shipping_price'] = (float)$validated['shipping_price'];
+
+            // 2. Update Client details
+            if ($order->client) {
+                $clientData = [];
+                if (!empty($validated['customer_name'])) $clientData['name'] = $validated['customer_name'];
+                if (!empty($validated['customer_phone'])) $clientData['phone'] = $validated['customer_phone'];
+                if (isset($validated['customer_email'])) $clientData['email'] = $validated['customer_email'];
+                if (isset($validated['city'])) $clientData['city'] = $validated['city'];
+                if (isset($validated['province'])) $clientData['province'] = $validated['province'];
+                if (isset($validated['street'])) $clientData['address'] = $validated['street'];
+
+                if (!empty($clientData)) {
+                    $order->client->update($clientData);
+                }
+            }
+
+            // 3. Update Shipment details
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipmentData = [];
+                if (!empty($validated['customer_name'])) $shipmentData['recipient_name'] = $validated['customer_name'];
+                if (!empty($validated['customer_phone'])) $shipmentData['recipient_phone'] = $validated['customer_phone'];
+                
+                $addressParts = [];
+                if (isset($validated['street'])) $addressParts[] = $validated['street'];
+                if (isset($validated['city'])) $addressParts[] = $validated['city'];
+                if (isset($validated['province'])) $addressParts[] = $validated['province'];
+
+                if (!empty($addressParts)) {
+                    $shipmentData['address'] = implode(', ', array_filter($addressParts));
+                }
+                if (isset($validated['city'])) $shipmentData['city'] = $validated['city'];
+                if (isset($validated['province'])) $shipmentData['region'] = $validated['province'];
+
+                if (!empty($shipmentData)) {
+                    $shipment->update($shipmentData);
+                }
+            }
+
+            // 4. Update items and recalculate total
+            if (isset($validated['items'])) {
+                // Delete existing items
+                $order->items()->delete();
+
+                $subtotal = 0.00;
+                foreach ($validated['items'] as $itemData) {
+                    $product  = Product::findOrFail($itemData['product_id']);
+                    $qty      = (int) $itemData['quantity'];
+
+                    $unitPrice = 0;
+                    if (!empty($product->variants)) {
+                        $variants  = is_array($product->variants) ? $product->variants : json_decode($product->variants, true);
+                        $unitPrice = (float) ($variants[0]['price'] ?? $product->cost ?? 0);
+                    } else {
+                        $unitPrice = (float) ($product->cost ?? 0);
+                    }
+
+                    $lineTotal = $unitPrice * $qty;
+                    $subtotal += $lineTotal;
+
+                    OrderItem::create([
+                        'order_id'     => $order->id,
+                        'product_id'   => $product->id,
+                        'product_name' => $product->title,
+                        'quantity'     => $qty,
+                        'unit_price'   => $unitPrice,
+                        'total_price'  => $lineTotal,
+                    ]);
+                }
+
+                $shippingPrice = isset($validated['shipping_price']) ? (float)$validated['shipping_price'] : ($order->shipping_price ?? 0);
+                $orderData['total_price'] = $subtotal + $shippingPrice;
+            } else if (isset($validated['shipping_price'])) {
+                // recalculate total price with new shipping price
+                $subtotal = $order->items()->sum('total_price');
+                $orderData['total_price'] = $subtotal + (float)$validated['shipping_price'];
+            }
+
+            if (!empty($orderData)) {
+                $order->update($orderData);
+            }
+        });
 
         // Log status change in history
         if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
@@ -303,7 +407,7 @@ class OrderController extends Controller
             ]);
         }
 
-        $order->load(['items.product', 'assignedAgent', 'histories.user']);
+        $order->load(['items.product', 'assignedAgent', 'histories.user', 'shipments', 'client']);
 
         return response()->json([
             'message' => 'Commande mise à jour avec succès.',
@@ -348,6 +452,16 @@ class OrderController extends Controller
         return response()->json([
             'message' => 'Agent assigné avec succès.',
             'order'   => $order,
+        ]);
+    }
+
+    /**
+     * Stub for syncing abandoned orders.
+     */
+    public function syncAbandoned(Request $request)
+    {
+        return response()->json([
+            'message' => 'Shopify sync is not configured yet.',
         ]);
     }
 }
