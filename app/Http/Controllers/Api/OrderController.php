@@ -61,7 +61,7 @@ class OrderController extends Controller
 
         // 6. Calculate metrics from the filtered query (not the paginated collection)
         $metricsQuery = Order::query();
-        
+
         // Apply same filters for metrics
         if ($user->role === 'staff') {
             $assignedProductIds = $user->products()->pluck('products.id')->toArray();
@@ -285,7 +285,7 @@ class OrderController extends Controller
             'status'           => 'nullable|string',
             'financial_status' => 'nullable|string|in:unpaid,pending,paid,refunded',
             'notes'            => 'nullable|string',
-            
+
             // Client editing
             'customer_name'    => 'nullable|string|max:255',
             'customer_phone'   => 'nullable|string|max:30',
@@ -334,7 +334,7 @@ class OrderController extends Controller
                 $shipmentData = [];
                 if (!empty($validated['customer_name'])) $shipmentData['recipient_name'] = $validated['customer_name'];
                 if (!empty($validated['customer_phone'])) $shipmentData['recipient_phone'] = $validated['customer_phone'];
-                
+
                 $addressParts = [];
                 if (isset($validated['street'])) $addressParts[] = $validated['street'];
                 if (isset($validated['city'])) $addressParts[] = $validated['city'];
@@ -462,6 +462,87 @@ class OrderController extends Controller
     {
         return response()->json([
             'message' => 'Shopify sync is not configured yet.',
+        ]);
+    }
+
+    /**
+     * Bulk assign orders to an agent.
+     */
+    public function bulkAssign(Request $request)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Non autorisé.'], 403);
+        }
+
+        $validated = $request->validate([
+            'ids'         => 'required|array|min:1',
+            'ids.*'       => 'exists:orders,id',
+            'assigned_to' => 'nullable|exists:users,id',
+        ]);
+
+        $agentId = $validated['assigned_to'];
+        $newAgent = $agentId ? User::find($agentId) : null;
+        $newAgentName = $newAgent?->name ?? 'Non assigné';
+
+        $orders = Order::whereIn('id', $validated['ids'])->get();
+
+        DB::transaction(function () use ($orders, $agentId, $newAgentName, $request) {
+            foreach ($orders as $order) {
+                $oldAgentName = $order->assignedAgent?->name ?? 'Non assigné';
+
+                $order->updateQuietly(['assigned_to' => $agentId]);
+
+                OrderHistory::create([
+                    'order_id'    => $order->id,
+                    'user_id'     => $request->user()->id,
+                    'action_type' => 'assigned',
+                    'old_value'   => $oldAgentName,
+                    'new_value'   => $newAgentName,
+                    'description' => "Assigné en masse de '{$oldAgentName}' à '{$newAgentName}'.",
+                ]);
+            }
+        });
+
+        return response()->json([
+            'message' => count($validated['ids']) . ' commande(s) assignée(s) avec succès.'
+        ]);
+    }
+
+    /**
+     * Bulk update order statuses.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'    => 'required|array|min:1',
+            'ids.*'  => 'exists:orders,id',
+            'status' => 'required|string',
+        ]);
+
+        $newStatus = $validated['status'];
+        $orders = Order::whereIn('id', $validated['ids'])->get();
+
+        DB::transaction(function () use ($orders, $newStatus, $request) {
+            foreach ($orders as $order) {
+                $oldStatus = $order->status;
+
+                if ($oldStatus !== $newStatus) {
+                    $order->update(['status' => $newStatus]);
+
+                    OrderHistory::create([
+                        'order_id'    => $order->id,
+                        'user_id'     => $request->user()->id,
+                        'action_type' => 'status_changed',
+                        'old_value'   => $oldStatus,
+                        'new_value'   => $newStatus,
+                        'description' => "Statut changé en masse de '{$oldStatus}' à '{$newStatus}'.",
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => count($validated['ids']) . ' commande(s) mise(s) à jour avec succès.'
         ]);
     }
 }

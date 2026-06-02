@@ -77,8 +77,8 @@ Route::prefix('shopify')->group(function () {
     Route::get('/orders', [ShopifyController::class, 'orders']);
 });
 
-Route::get   ('/shopify/shops',          [ShopifyController::class, 'listShops']);
-Route::patch ('/shopify/shops/{shop}',   [ShopifyController::class, 'updateShop']);
+Route::get('/shopify/shops',          [ShopifyController::class, 'listShops']);
+Route::patch('/shopify/shops/{shop}',   [ShopifyController::class, 'updateShop']);
 Route::delete('/shopify/shops/{shop}',   [ShopifyController::class, 'disconnectShop']);
 
 /*
@@ -89,7 +89,7 @@ Route::delete('/shopify/shops/{shop}',   [ShopifyController::class, 'disconnectS
 
 Route::middleware('auth:sanctum')->group(function () {
 
-     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     /*
     |------------------------------------------------------------------
     | Authentication
@@ -132,6 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sync-abandoned', [OrderController::class, 'syncAbandoned']);
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::put('/{id}', [OrderController::class, 'update']);
+        Route::post('/{id}/assign', [OrderController::class, 'assign']);
+        Route::put('/bulk/status', [OrderController::class, 'bulkUpdateStatus']);
+        Route::put('/bulk/assign', [OrderController::class, 'bulkAssign']);
         Route::post('/{id}/assign', [OrderController::class, 'assign']);
     });
 
@@ -217,5 +220,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/clients',        [ClientController::class, 'index']);
     Route::get('/clients/{id}',   [ClientController::class, 'show']);
     Route::put('/clients/{id}',   [ClientController::class, 'update']);
-    Route::delete('/clients/{id}',[ClientController::class, 'destroy']);
+    Route::delete('/clients/{id}', [ClientController::class, 'destroy']);
 });
