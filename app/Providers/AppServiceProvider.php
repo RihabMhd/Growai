@@ -3,6 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Domain\Orders\Services\OrderAuditLogger;
+use App\Domain\Orders\Models\Order;
+ 
+// Infrastructure implementations
+use App\Infrastructure\Orders\Services\EloquentOrderAuditLogger;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,6 +17,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+         $this->app->bind(OrderAuditLogger::class, EloquentOrderAuditLogger::class);
+         // Future bindings follow the same pattern:
+        // $this->app->bind(OrderRepositoryInterface::class, EloquentOrderRepository::class);
+        // $this->app->bind(ShipmentRepositoryInterface::class, EloquentShipmentRepository::class);
     }
 
     /**
@@ -19,6 +28,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
+        Order::observe(\App\Observers\OrderObserver::class);
     }
 }

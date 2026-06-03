@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Domain\Clients\Models\Client;
-use App\Domain\Users\Models\User;
-use App\Domain\Shops\Models\Shop;
 use App\Domain\Orders\Models\OrderItem;
 use App\Domain\Orders\Models\OrderStatus;
+use App\Domain\Shopify\Models\Shop;
+use App\Domain\Teams\Models\User;
+use App\Domain\WhatsApp\Models\Message;
+use App\Domain\Shipments\Models\Shipment;
 class Order extends Model
 {
     use HasFactory;

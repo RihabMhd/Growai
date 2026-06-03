@@ -3,7 +3,7 @@
 namespace App\Domain\Orders\Services;
 
 use App\Domain\Orders\Models\Order;
-use App\Models\User;
+use App\Domain\Teams\Models\User;
 
 /**
  * Pure domain service responsible for calculating and crediting

@@ -3,8 +3,8 @@
 namespace App\Domain\Orders\Services;
 
 use App\Domain\Orders\Models\Order;
-use App\Models\Team;
-use App\Models\User;
+use App\Domain\Teams\Models\Team;
+use App\Domain\Teams\Models\User;
 
 /**
  * Pure domain service responsible for selecting the best eligible agent
