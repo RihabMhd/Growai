@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace App\Domain\Orders\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

@@ -16,11 +16,20 @@ class EventServiceProvider extends ServiceProvider
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
-        OrderStatusChanged::class => [
-            SendWhatsappNotification::class,
-        ],
+        \App\Domain\Orders\Events\OrderStatusChanged::class => [
+            \App\Listeners\LogOrderHistory::class,
+            \App\Listeners\ProcessCommission::class,
+            \App\Listeners\SendWhatsappNotification::class,
+        ],,
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+        \App\Domain\Orders\Events\OrderCreated::class => [
+            // Add future listeners here (e.g. SendWelcomeEmail)
+        ],
+
+        \App\Domain\Orders\Events\OrderConfirmed::class => [
+            // Add future listeners here
         ],
     ];
 

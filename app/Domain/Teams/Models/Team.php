@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\Teams\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Domain\Teams\Models\User;
 class Team extends Model
 {
     use HasFactory;

@@ -1,11 +1,15 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\Teams\Models;
 use Laravel\Sanctum\HasApiTokens;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Domain\Products\Models\Product;
+use App\Domain\Orders\Models\OrderHistory;
+use App\Domain\WhatsApp\Models\Message;
+
 
 class User extends Authenticatable
 {
