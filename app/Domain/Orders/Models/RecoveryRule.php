@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\Orders\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 class RecoveryRule extends Model
 {
     use HasFactory;
@@ -22,9 +21,4 @@ class RecoveryRule extends Model
         'trigger_condition' => 'array',
         'is_active' => 'boolean'
     ];
-
-    public function template()
-    {
-        return $this->belongsTo(WhatsappTemplate::class, 'template_id');
-    }
 }

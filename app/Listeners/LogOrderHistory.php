@@ -2,24 +2,37 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Domain\Orders\Events\OrderStatusChanged;
+use App\Domain\Orders\Services\OrderAuditLogger;
 
+/**
+ * Listens for OrderStatusChanged and writes an audit history entry.
+ *
+ * Replaces the inline OrderHistory::create() calls that were scattered
+ * across OrderObserver::updated() and the controller methods.
+ *
+ * Registered in EventServiceProvider:
+ *   OrderStatusChanged::class => [
+ *       LogOrderHistory::class,
+ *       ProcessCommission::class,
+ *       SendWhatsappNotification::class,
+ *   ]
+ */
 class LogOrderHistory
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        private readonly OrderAuditLogger $auditLogger,
+    ) {}
 
-    /**
-     * Handle the event.
-     */
-    public function handle(object $event): void
+    public function handle(OrderStatusChanged $event): void
     {
-        //
+        $this->auditLogger->log(
+            order:       $event->order,
+            userId:      auth()->id() ?? $event->order->assigned_to,
+            actionType:  'status',
+            oldValue:    $event->oldStatus,
+            newValue:    $event->newStatus,
+            description: "Statut de la commande modifié de '{$event->oldStatus}' à '{$event->newStatus}'.",
+        );
     }
 }

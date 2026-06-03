@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\Orders\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Domain\Teams\Models\User;
 class OrderHistory extends Model
 {
     use HasFactory;

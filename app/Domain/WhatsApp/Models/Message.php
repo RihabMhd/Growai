@@ -1,9 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\WhatsApp\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Domain\Clients\Models\Client;
+use App\Domain\Orders\Models\Order;
+use App\Domain\Teams\Models\User;
 
 class Message extends Model
 {

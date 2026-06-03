@@ -3,88 +3,64 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Laravel\Socialite\Facades\Socialite;
+use Application\Auth\SocialLogin\SocialLoginCommand;
+use Application\Auth\SocialLogin\SocialLoginHandler;
+use Domain\Auth\Exceptions\AccountDisabledException;
+use Domain\Auth\Exceptions\InvalidCredentialsException;
+use Illuminate\Http\JsonResponse;
+use Infrastructure\Auth\OAuth\FacebookOAuthService;
+use Infrastructure\Auth\OAuth\GoogleOAuthService;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class SocialAuthController extends Controller
 {
-    public function googleRedirect()
+    public function __construct(
+        private readonly GoogleOAuthService $googleOAuth,
+        private readonly FacebookOAuthService $facebookOAuth,
+        private readonly SocialLoginHandler $socialLoginHandler,
+    ) {}
+
+    public function googleRedirect(): RedirectResponse|\Illuminate\Http\RedirectResponse
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        return $this->googleOAuth->redirect();
     }
 
-    public function googleCallback()
+    public function googleCallback(): JsonResponse
     {
-        $googleUser = Socialite::driver('google')->stateless()->user();
-
-        $user = User::where('email', $googleUser->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized. Account not found. Please contact your agency administrator.'
-            ], 403);
-        }
-
-        if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Unauthorized. Your account is inactive.'
-            ], 403);
-        }
-
-        // Save Google profile photo and info
-        $user->update([
-            'avatar' => $googleUser->avatar,
-            'provider' => 'google',
-            'provider_id' => $googleUser->id
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
+        return $this->handleCallback(
+            fn() => $this->googleOAuth->resolve()
+        );
     }
 
-    public function facebookRedirect()
+    public function facebookRedirect(): RedirectResponse|\Illuminate\Http\RedirectResponse
     {
-        return Socialite::driver('facebook')
-            ->stateless()
-            ->with(['auth_type' => 'rerequest'])
-            ->scopes(['public_profile', 'email'])
-            ->redirect();
+        return $this->facebookOAuth->redirect();
     }
 
-    public function facebookCallback()
+    public function facebookCallback(): JsonResponse
     {
-        $facebookUser = Socialite::driver('facebook')->stateless()->user();
+        return $this->handleCallback(
+            fn() => $this->facebookOAuth->resolve()
+        );
+    }
 
-        $user = User::where('email', $facebookUser->email)->first();
+    private function handleCallback(callable $resolve): JsonResponse
+    {
+        try {
+            $dto    = $resolve();
+            $result = $this->socialLoginHandler->handle(new SocialLoginCommand($dto));
 
-        if (!$user) {
+            return response()->json($result);
+
+        } catch (InvalidCredentialsException) {
             return response()->json([
-                'message' => 'Unauthorized. Account not found. Please contact your agency administrator.'
+                'message' => 'Unauthorized. Account not found. Please contact your agency administrator.',
+            ], 403);
+
+        } catch (AccountDisabledException) {
+            return response()->json([
+                'message' => 'Unauthorized. Your account is inactive.',
             ], 403);
         }
-
-        if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Unauthorized. Your account is inactive.'
-            ], 403);
-        }
-
-        // Save Facebook profile photo and info
-        $user->update([
-            'avatar' => $facebookUser->avatar,
-            'provider' => 'facebook',
-            'provider_id' => $facebookUser->id
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
     }
 }

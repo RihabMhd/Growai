@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Domain\Shipments\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Domain\Orders\Models\Order;
 class Shipment extends Model
 {
     use HasFactory;
