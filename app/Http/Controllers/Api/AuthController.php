@@ -3,118 +3,102 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
-use App\Services\AuthService;
+use Application\Auth\Contracts\TokenServiceInterface;
+use Application\Auth\Login\LoginCommand;
+use Application\Auth\Login\LoginHandler;
+use Domain\Auth\Exceptions\AccountDisabledException;
+use Domain\Auth\Exceptions\InvalidCredentialsException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    protected AuthService $authService;
+    public function __construct(
+        private readonly LoginHandler $loginHandler,
+        private readonly TokenServiceInterface $tokenService,
+    ) {}
 
-    public function __construct(AuthService $authService)
+    public function login(Request $request): JsonResponse
     {
-        $this->authService = $authService;
-    }
+        $data = $request->validate([
+            'email'    => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-    /**
-     * Login
-     */
-    public function login(LoginRequest $request)
-    {
-        $response = $this->authService->login($request->validated());
+        try {
+            $result = $this->loginHandler->handle(
+                new LoginCommand($data['email'], $data['password'])
+            );
 
-        return response()->json(
-            [
-                'message' => $response['message'],
-                'data' => $response['data'] ?? null
-            ],
-            $response['status']
-        );
-    }
+            return response()->json([
+                'message' => 'Login successful',
+                'data'    => $result,
+            ]);
 
-    /**
-     * Current authenticated user
-     */
-    public function me(Request $request)
-    {
-        $user = $request->user();
-        if ($user) {
-            $user->load('products');
+        } catch (InvalidCredentialsException $e) {
+            return response()->json(['message' => $e->getMessage()], 401);
+
+        } catch (AccountDisabledException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
-        return response()->json([
-            'user' => $user
-        ]);
     }
 
-    /**
-     * Logout
-     */
-    public function logout(Request $request)
-    {
-        $response = $this->authService->logout($request->user());
-
-        return response()->json([
-            'message' => $response['message']
-        ], $response['status']);
-    }
-
-    /**
-     * Update user profile
-     */
-    public function updateProfile(Request $request)
+    public function me(Request $request): JsonResponse
     {
         $user = $request->user();
+        $user?->load('products');
 
+        return response()->json(['user' => $user]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $this->tokenService->revokeCurrent($request->user());
+
+        return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'whatsapp' => 'nullable|string|max:30',
-            'avatar' => 'nullable|string',
+            'name'     => ['required', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'avatar'   => ['nullable', 'string'],
         ]);
 
-        $user->update($validated);
+        $request->user()->update($validated);
 
         return response()->json([
             'message' => 'Profil mis à jour avec succès.',
-            'user' => $user->fresh('products')
+            'user'    => $request->user()->fresh('products'),
         ]);
     }
 
-    /**
-     * Update user password
-     */
-    public function updatePassword(Request $request)
+    public function updatePassword(Request $request): JsonResponse
     {
-        $user = $request->user();
-
         $validated = $request->validate([
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($validated['password'])
+        $request->user()->update([
+            'password' => app(\Domain\Auth\Services\Interfaces\PasswordHasherInterface::class)
+                ->hash($validated['password']),
         ]);
 
-        return response()->json([
-            'message' => 'Mot de passe mis à jour avec succès.'
-        ]);
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
     }
 
-    /**
-     * Toggle Two-Factor Authentication
-     */
-    public function toggle2FA(Request $request)
+    public function toggle2FA(Request $request): JsonResponse
     {
         $user = $request->user();
-        
-        $user->update([
-            'two_factor_enabled' => !$user->two_factor_enabled
-        ]);
+
+        $user->update(['two_factor_enabled' => !$user->two_factor_enabled]);
 
         return response()->json([
-            'message' => $user->two_factor_enabled 
-                ? 'Authentification à deux facteurs activée.' 
+            'message'             => $user->two_factor_enabled
+                ? 'Authentification à deux facteurs activée.'
                 : 'Authentification à deux facteurs désactivée.',
-            'two_factor_enabled' => $user->two_factor_enabled
+            'two_factor_enabled'  => $user->two_factor_enabled,
         ]);
     }
 }
