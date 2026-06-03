@@ -20,7 +20,7 @@ class EventServiceProvider extends ServiceProvider
             \App\Listeners\LogOrderHistory::class,
             \App\Listeners\ProcessCommission::class,
             \App\Listeners\SendWhatsappNotification::class,
-        ],,
+        ],
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],

@@ -2,7 +2,7 @@
 
 namespace Application\Auth\Login;
 
-use App\Models\User;
+use App\Domain\Teams\Models\User;
 use Application\Auth\Contracts\TokenServiceInterface;
 use Domain\Auth\Exceptions\AccountDisabledException;
 use Domain\Auth\Exceptions\InvalidCredentialsException;
