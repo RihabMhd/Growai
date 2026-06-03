@@ -10,7 +10,9 @@ final readonly class ListShopsHandler
         private ShopRepositoryInterface $shops
     ) {}
 
-    public function handle()
+    public function handle(
+        ListShopsQuery $query
+    )
     {
         return $this->shops->activeShops();
     }
