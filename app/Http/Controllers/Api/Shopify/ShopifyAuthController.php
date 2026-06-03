@@ -1,69 +1,78 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Shopify;
 
+use App\Application\Shopify\ConnectShop\ConnectShopCommand;
+use App\Application\Shopify\ConnectShop\ConnectShopHandler;
+use App\Domain\Shopify\Exceptions\ShopifyOAuthException;
 use App\Http\Controllers\Controller;
-use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
-class ShopifyAuthController extends Controller
+final class ShopifyAuthController extends Controller
 {
     public function redirect(Request $request)
     {
-        // Allow the frontend to pass a specific shop domain (multi-store flow).
-        // Falls back to the default shop configured in services.shopify.shop.
-        $shop  = $request->query('shop') ?? config('services.shopify.shop');
+        $shop = $request->query('shop')
+            ?? config('services.shopify.shop');
+
         $state = Str::random(40);
 
-        // Use cache instead of session (API routes are stateless)
-        Cache::put('shopify_oauth_state_' . $state, true, now()->addMinutes(10));
-
-        $query = http_build_query([
-            'client_id'    => config('services.shopify.client_id'),
-            'scope'        => 'read_products,write_products,read_orders,write_orders',
-            'redirect_uri' => config('services.shopify.redirect_uri'),
-            'state'        => $state,
-        ]);
-
-        return redirect("https://{$shop}/admin/oauth/authorize?{$query}");
-    }
-
-    public function callback(Request $request)
-    {
-        $state = $request->query('state');
-
-        // Verify state exists in cache
-        if (!$state || !Cache::pull('shopify_oauth_state_' . $state)) {
-            abort(403, 'Invalid state.');
-        }
-
-        $shop = $request->query('shop');
-        $code = $request->query('code');
-
-        $response = Http::post("https://{$shop}/admin/oauth/access_token", [
-            'client_id'     => config('services.shopify.client_id'),
-            'client_secret' => config('services.shopify.client_secret'),
-            'code'          => $code,
-        ]);
-
-        if (!$response->successful()) {
-            return redirect(config('app.frontend_url') . '/integrations/shopify?error=1');
-        }
-
-        $accessToken = $response->json('access_token');
-
-        Shop::updateOrCreate(
-            ['shopify_domain' => $shop],
-            [
-                'name'         => $shop, 
-                'access_token' => $accessToken,
-                'is_active'    => true,
-            ]
+        Cache::put(
+            'shopify_oauth_state_'.$state,
+            true,
+            now()->addMinutes(10)
         );
 
-        return redirect(config('app.frontend_url') . '/integrations/shopify?connected=1');
+        $query = http_build_query([
+            'client_id' => config('services.shopify.client_id'),
+            'scope' => 'read_products,write_products,read_orders,write_orders',
+            'redirect_uri' => config('services.shopify.redirect_uri'),
+            'state' => $state,
+        ]);
+
+        return redirect(
+            "https://{$shop}/admin/oauth/authorize?{$query}"
+        );
+    }
+
+    public function callback(
+        Request $request,
+        ConnectShopHandler $handler
+    ) {
+
+        $state = $request->query('state');
+
+        if (
+            !$state ||
+            !Cache::pull(
+                'shopify_oauth_state_'.$state
+            )
+        ) {
+            abort(403, 'Invalid state');
+        }
+
+        try {
+
+            $handler->handle(
+                new ConnectShopCommand(
+                    shop: $request->query('shop'),
+                    code: $request->query('code')
+                )
+            );
+
+            return redirect(
+                config('app.frontend_url')
+                . '/integrations/shopify?connected=1'
+            );
+
+        } catch (ShopifyOAuthException) {
+
+            return redirect(
+                config('app.frontend_url')
+                . '/integrations/shopify?error=1'
+            );
+        }
     }
 }

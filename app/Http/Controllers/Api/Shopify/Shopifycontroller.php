@@ -1,231 +1,140 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Shopify;
 
+use App\Application\Shopify\DisconnectShop\DisconnectShopCommand;
+use App\Application\Shopify\DisconnectShop\DisconnectShopHandler;
+use App\Application\Shopify\GetShopStatus\GetShopStatusHandler;
+use App\Application\Shopify\GetShopStatus\GetShopStatusQuery;
+use App\Application\Shopify\ListShopOrders\ListShopOrdersHandler;
+use App\Application\Shopify\ListShopOrders\ListShopOrdersQuery;
+use App\Application\Shopify\ListShopProducts\ListShopProductsHandler;
+use App\Application\Shopify\ListShopProducts\ListShopProductsQuery;
+use App\Application\Shopify\ListShops\ListShopsHandler;
+use App\Application\Shopify\ListShops\ListShopsQuery;
+use App\Application\Shopify\SyncShopProducts\SyncShopProductsCommand;
+use App\Application\Shopify\SyncShopProducts\SyncShopProductsHandler;
+use App\Application\Shopify\UpdateShop\UpdateShopCommand;
+use App\Application\Shopify\UpdateShop\UpdateShopHandler;
+use App\Domain\Shopify\Models\Shop;
 use App\Http\Controllers\Controller;
-use App\Jobs\SyncShopifyProductsJob;
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Shop;
-use App\Services\ShopifyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ShopifyController extends Controller
+final class ShopifyController extends Controller
 {
-    public function __construct(
-        private readonly ShopifyService $shopifyService
-    ) {}
+    public function status(
+        Request $request,
+        GetShopStatusHandler $handler
+    ): JsonResponse {
 
-    /**
-     * Shopify connection status (single-shop, kept for backward-compat).
-     */
-    public function status(Request $request): JsonResponse
-    {
-        $shop = $this->resolveShop($request);
+        $result = $handler->handle(
+            new GetShopStatusQuery(
+                shopId: $request->query('shop_id'),
+                user: $request->user()
+            )
+        );
 
-        if (!$shop) {
-            return response()->json(['connected' => false]);
-        }
+        return response()->json($result);
+    }
+
+    public function syncProducts(
+        Request $request,
+        SyncShopProductsHandler $handler
+    ): JsonResponse {
+
+        $handler->handle(
+            new SyncShopProductsCommand(
+                shopId: (int) $request->query('shop_id')
+            )
+        );
 
         return response()->json([
-            'connected'      => true,
-            'shop_id'        => $shop->id,
-            'domain'         => $shop->shopify_domain,
-            'last_synced_at' => $shop->last_synced_at?->toISOString(),
-            'product_count'  => Product::where('shop_id', $shop->id)
-                ->where('status', 'active')
-                ->count(),
-            'order_count'    => Order::where('shop_id', $shop->id)->count(),
+            'message' => 'Sync queued successfully.'
         ]);
     }
 
-    /**
-     * Sync Shopify products for the resolved shop.
-     */
-    public function syncProducts(Request $request): JsonResponse
-    {
-        $shop = $this->resolveShop($request);
+    public function products(
+        Request $request,
+        ListShopProductsHandler $handler
+    ): JsonResponse {
 
-        if (!$shop) {
-            return response()->json([
-                'error' => 'No Shopify shop connected.',
-            ], 422);
-        }
+        return response()->json(
+            $handler->handle(
+                new ListShopProductsQuery(
+                    shopId: (int) $request->query('shop_id'),
+                    search: $request->query('search'),
+                    perPage: (int) $request->query('per_page', 24)
+                )
+            )
+        );
+    }
 
-        SyncShopifyProductsJob::dispatch($shop);
+    public function orders(
+        Request $request,
+        ListShopOrdersHandler $handler
+    ): JsonResponse {
 
-        // last_synced_at is now in $fillable, so this actually persists
-        $shop->update(['last_synced_at' => now()]);
+        return response()->json(
+            $handler->handle(
+                new ListShopOrdersQuery(
+                    shopId: (int) $request->query('shop_id'),
+                    status: $request->query('status'),
+                    search: $request->query('search'),
+                    perPage: (int) $request->query('per_page', 20)
+                )
+            )
+        );
+    }
+
+    public function listShops(
+        ListShopsHandler $handler
+    ): JsonResponse {
 
         return response()->json([
-            'message' => 'Product sync queued successfully.',
-            'shop_id' => $shop->id,
+            'shops' => $handler->handle(
+                new ListShopsQuery()
+            )
         ]);
     }
 
-    /**
-     * List synced products for the resolved shop.
-     */
-    public function products(Request $request): JsonResponse
-    {
-        $shop = $this->resolveShop($request);
+    public function updateShop(
+        Request $request,
+        Shop $shop,
+        UpdateShopHandler $handler
+    ): JsonResponse {
 
-        if (!$shop) {
-            return response()->json(['data' => [], 'meta' => []]);
-        }
-
-        $query = Product::where('shop_id', $shop->id)
-            ->where('status', 'active');
-
-        if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('vendor', 'like', "%{$search}%");
-            });
-        }
-
-        $products = $query
-            ->orderByDesc('created_at')
-            ->paginate($request->query('per_page', 24));
-
-        return response()->json($products);
-    }
-
-    /**
-     * List synced orders for the resolved shop.
-     */
-    public function orders(Request $request): JsonResponse
-    {
-        $shop = $this->resolveShop($request);
-
-        if (!$shop) {
-            return response()->json(['data' => [], 'meta' => []]);
-        }
-
-        $query = Order::with('items')->where('shop_id', $shop->id);
-
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%");
-            });
-        }
-
-        $orders = $query
-            ->orderByDesc('shopify_created_at')
-            ->paginate($request->query('per_page', 20));
-
-        return response()->json($orders);
-    }
-
-    /**
-     * List all connected shops for the authenticated user.
-     * Returns boutique_name, last_synced_at, and created_at so the frontend
-     * can render the store card and boutique-name input correctly.
-     *
-     * GET /api/shopify/shops
-     * Response: { shops: [ { id, name, shopify_domain, boutique_name,
-     *                         last_synced_at, created_at } ] }
-     */
-    public function listShops(Request $request): JsonResponse
-    {
-        $shops = Shop::where('is_active', true)
-            ->whereNotNull('access_token')
-            ->orderByDesc('created_at')
-            ->get([
-                'id',
-                'name',
-                'shopify_domain',
-                'boutique_name',   // now in $fillable — persisted correctly
-                'last_synced_at',
-                'created_at',
-            ]);
-
-        return response()->json(['shops' => $shops]);
-    }
-
-    /**
-     * Update mutable shop fields (name, boutique_name).
-     *
-     * PATCH /api/shopify/shops/{shop}
-     */
-    public function updateShop(Request $request, Shop $shop): JsonResponse
-    {
         $validated = $request->validate([
-            'name'          => ['nullable', 'string', 'max:120'],
-            // Accept boutique_name so the frontend WhatsApp-template field works
+            'name' => ['nullable', 'string', 'max:120'],
             'boutique_name' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $shop->update($validated);
+        $updated = $handler->handle(
+            new UpdateShopCommand(
+                shopId: $shop->id,
+                name: $validated['name'] ?? null,
+                boutiqueName: $validated['boutique_name'] ?? null,
+            )
+        );
 
-        return response()->json(['shop' => $shop]);
-    }
-
-    /**
-     * Disconnect a shop (revoke token, mark inactive).
-     *
-     * DELETE /api/shopify/shops/{shop}
-     */
-    public function disconnectShop(Request $request, Shop $shop): JsonResponse
-    {
-        $shop->update([
-            'is_active'    => false,
-            'access_token' => null,
+        return response()->json([
+            'shop' => $updated
         ]);
-
-        return response()->json(['message' => 'Store disconnected.']);
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
+    public function disconnectShop(
+        Shop $shop,
+        DisconnectShopHandler $handler
+    ): JsonResponse {
 
-    /**
-     * Resolve the shop for the current request.
-     *
-     * Priority:
-     *  1. Explicit ?shop_id query parameter (must still be active + have token)
-     *  2. Authenticated user's own shop_id (if the User model carries one)
-     *  3. Last active shop in the database (single-tenant fallback only)
-     *
-     * The previous implementation fetched the first shop in the entire table
-     * regardless of which user was authenticated, making every tenant's data
-     * visible to every other tenant.  Step 2 scopes the fallback to the
-     * authenticated user so multi-tenant data is not leaked.
-     */
-    private function resolveShop(Request $request): ?Shop
-    {
-        $user = $request->user();
+        $handler->handle(
+            new DisconnectShopCommand(
+                $shop->id
+            )
+        );
 
-        // 1. Explicit shop_id from query string
-        if ($shopId = $request->query('shop_id')) {
-            return Shop::where('id', $shopId)
-                ->where('is_active', true)
-                ->whereNotNull('access_token')
-                ->first();
-        }
-
-        // 2. Shop owned by the authenticated user
-        if ($user && $user->shop_id) {
-            return Shop::where('id', $user->shop_id)
-                ->where('is_active', true)
-                ->whereNotNull('access_token')
-                ->first();
-        }
-
-        // 3. Single-tenant fallback: latest active Shopify shop
-        //    (safe only when every install has exactly one shop)
-        return Shop::where('is_active', true)
-            ->whereNotNull('access_token')
-            ->where('platform', 'shopify')
-            ->latest()
-            ->first();
+        return response()->json([
+            'message' => 'Store disconnected.'
+        ]);
     }
 }
