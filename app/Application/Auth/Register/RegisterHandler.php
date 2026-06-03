@@ -2,7 +2,7 @@
 
 namespace Application\Auth\Register;
 
-use App\Models\User;
+use App\Domain\Teams\Models\User;
 use Application\Auth\Contracts\TokenServiceInterface;
 use Domain\Auth\Services\Interfaces\PasswordHasherInterface;
 
