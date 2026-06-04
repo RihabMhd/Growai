@@ -39,12 +39,12 @@ final class UpdateProductHandler
     {
         $this->resolveHandleIfChanged($command, $product);
 
-        // Push to Shopify — local DB updated by webhook on arrival
-        $this->shopifyClient->updateProduct($product->shopify_product_id, $command->data);
+        if (!empty($product->external_product_id)) {
+            $this->shopifyClient->updateProduct($product->external_product_id, $command->data);
+        }
 
-        // Return product with pending changes overlaid for optimistic frontend response
         $product->fill($command->data->toArray());
-
+        $product->save(); // ← add this
         return $product;
     }
 
@@ -77,19 +77,19 @@ final class UpdateProductHandler
         }
 
         return new \App\Domain\Products\DTOs\ProductData(
-            shopId:      $data->shopId,
-            title:       $data->title,
-            status:      $data->status,
-            sourceType:  $data->sourceType,
-            vendor:      $data->vendor,
+            shopId: $data->shopId,
+            title: $data->title,
+            status: $data->status,
+            sourceType: $data->sourceType,
+            vendor: $data->vendor,
             productType: $data->productType,
-            handle:      $handle,
+            handle: $handle,
             description: $data->description,
-            image:       $data->image,
-            cost:        $data->cost,
-            tags:        $data->tags,
-            variants:    $data->variants,
-            images:      $data->images,
+            image: $data->image,
+            cost: $data->cost,
+            tags: $data->tags,
+            variants: $data->variants,
+            images: $data->images,
         );
     }
 

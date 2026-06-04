@@ -61,7 +61,7 @@ final class ProductController extends Controller
     {
         $product = $this->repository->findByIdAndShop($productId, $shop->id);
 
-        return response()->json($product->load('variants'));
+        return response()->json($product);
     }
 
     // -------------------------------------------------------------------------
@@ -76,7 +76,7 @@ final class ProductController extends Controller
 
         $product = $this->createHandler->handle(new CreateProductCommand($data));
 
-        return response()->json($product->load('variants'), 201);
+        return response()->json($product, 201);
     }
 
     // -------------------------------------------------------------------------
@@ -93,7 +93,7 @@ final class ProductController extends Controller
             new UpdateProductCommand(productId: $productId, shopId: $shop->id, data: $data)
         );
 
-        return response()->json($product->load('variants'));
+        return response()->json($product);
     }
 
     // -------------------------------------------------------------------------
