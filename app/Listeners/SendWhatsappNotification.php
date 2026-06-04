@@ -2,10 +2,10 @@
 
 namespace App\Listeners;
 
-use App\Events\OrderStatusChanged;
+use App\Domain\Orders\Events\OrderStatusChanged;
 use App\Jobs\SendWhatsappMessageJob;
-use App\Models\OrderStatus;
-use App\Models\Team;
+use App\Domain\Orders\Models\OrderStatus;
+use App\Domain\Teams\Models\Team;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Cache;
@@ -122,6 +122,6 @@ class SendWhatsappNotification implements ShouldQueue
 
     private function getFirstProductName(object $order): string
     {
-        return $order->items()->with('product')->first()?->product?->name ?? '';
+        return $order->items()->with('product')->first()?->product?->title ?? '';
     }
 }

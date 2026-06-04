@@ -16,6 +16,11 @@ class Order extends Model
 {
     use HasFactory;
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\OrderFactory::new();
+    }
+
     public function scopeForAgent(Builder $query, int $agentId): Builder
     {
         return $query->whereHas('items', function ($sub) use ($agentId) {

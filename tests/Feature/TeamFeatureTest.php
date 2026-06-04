@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Mail\TeamInvitationMail;
-use App\Models\User;
-use App\Models\Team;
+use App\Domain\Teams\Models\User;
+use App\Domain\Teams\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
