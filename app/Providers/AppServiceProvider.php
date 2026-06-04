@@ -49,8 +49,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserRepositoryInterface::class,        EloquentUserRepository::class);
         $this->app->bind(ShopRepositoryInterface::class, EloquentShopRepository::class);
         $this->app->bind(ShopifyClientInterface::class, ShopifyClient::class);
-        $this->app->bind(ShopifyOAuthClientInterface::class,ShopifyOAuthClient::class);
-        $this->app->bind(ShopifyWebhookProcessorInterface::class,ShopifyWebhookHandler::class);
+        $this->app->bind(ShopifyOAuthClientInterface::class, ShopifyOAuthClient::class);
+        $this->app->bind(ShopifyWebhookProcessorInterface::class, ShopifyWebhookHandler::class);
+        $this->app->bind(
+            \App\Domain\Products\Contracts\ProductRepositoryInterface::class,
+            \App\Infrastructure\Products\Repositories\EloquentProductRepository::class,
+        );
     }
 
     /**
