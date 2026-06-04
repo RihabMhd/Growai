@@ -20,6 +20,7 @@ use App\Domain\Shopify\Models\Shop;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 final class ShopifyController extends Controller
 {
@@ -38,19 +39,31 @@ final class ShopifyController extends Controller
         return response()->json($result);
     }
 
+    /**
+     * POST /api/shopify/shops/{shop}/sync-products
+     *
+     * Laravel resolves {shop} via route model binding.
+     * We then verify the shop belongs to the authenticated user's team
+     * before dispatching the sync job. No query-param fallback. No
+     * defaulting to any shop in the database.
+     */
     public function syncProducts(
         Request $request,
+        Shop $shop,
         SyncShopProductsHandler $handler
     ): JsonResponse {
 
+        $this->authorizeShopAccess($request, $shop);
+
         $handler->handle(
             new SyncShopProductsCommand(
-                shopId: (int) $request->query('shop_id')
+                shopId: $shop->id
             )
         );
 
         return response()->json([
-            'message' => 'Sync queued successfully.'
+            'message' => 'Sync queued successfully.',
+            'shop_id' => $shop->id,
         ]);
     }
 
@@ -105,7 +118,7 @@ final class ShopifyController extends Controller
     ): JsonResponse {
 
         $validated = $request->validate([
-            'name' => ['nullable', 'string', 'max:120'],
+            'name'         => ['nullable', 'string', 'max:120'],
             'boutique_name' => ['nullable', 'string', 'max:120'],
         ]);
 
@@ -136,5 +149,29 @@ final class ShopifyController extends Controller
         return response()->json([
             'message' => 'Store disconnected.'
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verify the resolved shop belongs to the authenticated user's team.
+     *
+     * The shops table carries a nullable team_id foreign key. If your auth
+     * model uses a different ownership column (e.g. user_id), swap the
+     * comparison below. The important invariant: we never trust a client-
+     * supplied shop identifier without verifying ownership server-side.
+     *
+     * @throws AccessDeniedHttpException
+     */
+
+    private function authorizeShopAccess(Request $request, Shop $shop): void
+    {
+        if (! $shop->is_active) {
+            throw new AccessDeniedHttpException(
+                'This shop is inactive.'
+            );
+        }
     }
 }

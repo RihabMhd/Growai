@@ -185,15 +185,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('shopify')->group(function () {
 
-        Route::get('/status', [
-            ShopifyController::class,
-            'status'
-        ]);
+        Route::get('/shops',                  [ShopifyController::class, 'listShops']);
+        Route::get('/status',                 [ShopifyController::class, 'status']);
 
         Route::post('/sync-products', [
             ShopifyController::class,
             'syncProducts'
         ]);
+
 
         Route::get('/products', [
             ShopifyController::class,
@@ -205,12 +204,9 @@ Route::middleware('auth:sanctum')->group(function () {
             'orders'
         ]);
 
-        Route::prefix('shops')->group(function () {
 
-            Route::get('/', [
-                ShopifyController::class,
-                'listShops'
-            ]);
+
+        Route::prefix('shops')->group(function () {
 
             Route::patch('/{shop}', [
                 ShopifyController::class,
@@ -221,6 +217,10 @@ Route::middleware('auth:sanctum')->group(function () {
                 ShopifyController::class,
                 'disconnectShop'
             ]);
+
+            Route::post('/{shop}/sync-products', [ShopifyController::class, 'syncProducts']);
+            Route::patch('/{shop}',              [ShopifyController::class, 'updateShop']);
+            Route::delete('/{shop}',             [ShopifyController::class, 'disconnectShop']);
         });
     });
 
@@ -517,3 +517,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 });
+
+Route::post(
+    'shopify/webhook/{shopDomain}',
+    [ShopifyWebhookController::class, 'handle']
+)->where('shopDomain', '[a-z0-9\-]+\.myshopify\.com');
