@@ -16,101 +16,38 @@ use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeliveryCompanyController;
 use App\Http\Controllers\Api\OrderStatusController;
-use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ShipmentController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\UploadController;
 
+use App\Http\Controllers\Products\ProductController;
+use App\Http\Controllers\Shops\ShopSessionController;
+
 /*
 |--------------------------------------------------------------------------
-| Public Authentication Routes
+| Public — Authentication
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('auth')->group(function () {
 
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login',           [AuthController::class, 'login']);
+    Route::post('/forgot-password', [PasswordController::class, 'forgotPassword']);
+    Route::post('/reset-password',  [PasswordController::class, 'resetPassword']);
 
-    Route::post('/forgot-password', [
-        PasswordController::class,
-        'forgotPassword'
-    ]);
+    Route::get('/google/redirect',   [SocialAuthController::class, 'googleRedirect']);
+    Route::get('/google/callback',   [SocialAuthController::class, 'googleCallback']);
+    Route::get('/facebook/redirect', [SocialAuthController::class, 'facebookRedirect']);
+    Route::get('/facebook/callback', [SocialAuthController::class, 'facebookCallback']);
 
-    Route::post('/reset-password', [
-        PasswordController::class,
-        'resetPassword'
-    ]);
-
-    Route::get('/google/redirect', [
-        SocialAuthController::class,
-        'googleRedirect'
-    ]);
-
-    Route::get('/google/callback', [
-        SocialAuthController::class,
-        'googleCallback'
-    ]);
-
-    Route::get('/facebook/redirect', [
-        SocialAuthController::class,
-        'facebookRedirect'
-    ]);
-
-    Route::get('/facebook/callback', [
-        SocialAuthController::class,
-        'facebookCallback'
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Shopify OAuth
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/shopify/redirect', [
-        ShopifyAuthController::class,
-        'redirect'
-    ]);
-
-    Route::get('/shopify/callback', [
-        ShopifyAuthController::class,
-        'callback'
-    ]);
+    Route::get('/shopify/redirect', [ShopifyAuthController::class, 'redirect']);
+    Route::get('/shopify/callback', [ShopifyAuthController::class, 'callback']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Public Products
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('products')->group(function () {
-
-    Route::get('/public', [
-        ProductController::class,
-        'index'
-    ]);
-
-    Route::get('/public/{product}', [
-        ProductController::class,
-        'show'
-    ]);
-
-    Route::get('/search', [
-        ProductController::class,
-        'search'
-    ]);
-
-    Route::get('/tag/{tag}', [
-        ProductController::class,
-        'getByTag'
-    ]);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Public Webhooks
+| Public — Webhooks
 |--------------------------------------------------------------------------
 */
 
@@ -124,6 +61,11 @@ Route::post(
     [ShopifyWebhookController::class, 'handle']
 )->name('shopify.webhook');
 
+Route::post(
+    'shopify/webhook/{shopDomain}',
+    [ShopifyWebhookController::class, 'handle']
+)->where('shopDomain', '[a-z0-9\-]+\.myshopify\.com');
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes
@@ -134,47 +76,36 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/dashboard', [
-        DashboardController::class,
-        'index'
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
     | Auth
     |--------------------------------------------------------------------------
     */
 
     Route::prefix('auth')->group(function () {
+        Route::get('/me',            [AuthController::class, 'me']);
+        Route::post('/logout',       [AuthController::class, 'logout']);
+        Route::put('/profile',       [AuthController::class, 'updateProfile']);
+        Route::put('/password',      [AuthController::class, 'updatePassword']);
+        Route::post('/2fa/toggle',   [AuthController::class, 'toggle2FA']);
+    });
 
-        Route::get('/me', [
-            AuthController::class,
-            'me'
-        ]);
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
 
-        Route::post('/logout', [
-            AuthController::class,
-            'logout'
-        ]);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 
-        Route::put('/profile', [
-            AuthController::class,
-            'updateProfile'
-        ]);
+    /*
+    |--------------------------------------------------------------------------
+    | Shop Session (active shop switcher)
+    |--------------------------------------------------------------------------
+    */
 
-        Route::put('/password', [
-            AuthController::class,
-            'updatePassword'
-        ]);
-
-        Route::post('/2fa/toggle', [
-            AuthController::class,
-            'toggle2FA'
-        ]);
+    Route::prefix('session/shop')->group(function () {
+        Route::get   ('/',  [ShopSessionController::class, 'show']);
+        Route::put   ('/',  [ShopSessionController::class, 'update']);
+        Route::delete('/',  [ShopSessionController::class, 'destroy']);
     });
 
     /*
@@ -185,51 +116,40 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('shopify')->group(function () {
 
-
-        Route::get('/status', [
-            ShopifyController::class,
-            'status'
-        ]);
-        
-        Route::post('/sync-products', [
-            ShopifyController::class,
-            'syncProducts'
-        ]);
-
-
-        Route::get('/products', [
-            ShopifyController::class,
-            'products'
-        ]);
-
-        Route::get('/orders', [
-            ShopifyController::class,
-            'orders'
-        ]);
-
-
+        Route::get('/status',        [ShopifyController::class, 'status']);
+        Route::post('/sync-products',[ShopifyController::class, 'syncProducts']);
+        Route::get('/products',      [ShopifyController::class, 'products']);
+        Route::get('/orders',        [ShopifyController::class, 'orders']);
 
         Route::prefix('shops')->group(function () {
-
-            Route::get('/', [
-                ShopifyController::class,
-                'listShops'
-            ]);
-
-            Route::patch('/{shop}', [
-                ShopifyController::class,
-                'updateShop'
-            ]);
-
-            Route::delete('/{shop}', [
-                ShopifyController::class,
-                'disconnectShop'
-            ]);
-
-            Route::post('/{shop}/sync-products', [ShopifyController::class, 'syncProducts']);
-            Route::patch('/{shop}',              [ShopifyController::class, 'updateShop']);
-            Route::delete('/{shop}',             [ShopifyController::class, 'disconnectShop']);
+            Route::get   ('/',                      [ShopifyController::class, 'listShops']);
+            Route::post  ('/{shop}/sync-products',  [ShopifyController::class, 'syncProducts']);
+            Route::patch ('/{shop}',                [ShopifyController::class, 'updateShop']);
+            Route::delete('/{shop}',                [ShopifyController::class, 'disconnectShop']);
         });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Products  —  scoped to /shops/{shop}/products
+    |
+    | Route order matters:
+    |   1. Named sub-routes (summary, bulk-*) registered before the wildcard
+    |      {product} segment to avoid shadowing.
+    |   2. Public read routes are outside auth middleware intentionally;
+    |      they have been removed from this block — see note below.
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('shops/{shop}')->group(function () {
+
+        // Aggregates & bulk — must precede apiResource wildcard
+        Route::get  ('products/summary',      [ProductController::class, 'summary']);
+        Route::post ('products/bulk-delete',  [ProductController::class, 'bulkDestroy']);
+        Route::post ('products/bulk-status',  [ProductController::class, 'bulkUpdateStatus']);
+
+        // Standard CRUD
+        Route::apiResource('products', ProductController::class);
     });
 
     /*
@@ -239,81 +159,15 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('orders')->group(function () {
-
-        Route::get('/', [
-            OrderController::class,
-            'index'
-        ]);
-
-        Route::post('/', [
-            OrderController::class,
-            'store'
-        ]);
-
-        Route::post('/sync-abandoned', [
-            OrderController::class,
-            'syncAbandoned'
-        ]);
-
-        Route::put('/bulk/status', [
-            OrderController::class,
-            'bulkUpdateStatus'
-        ]);
-
-        Route::put('/bulk/assign', [
-            OrderController::class,
-            'bulkAssign'
-        ]);
-
-        Route::get('/{id}', [
-            OrderController::class,
-            'show'
-        ]);
-
-        Route::put('/{id}', [
-            OrderController::class,
-            'update'
-        ]);
-
-        Route::post('/{id}/assign', [
-            OrderController::class,
-            'assign'
-        ]);
+        Route::get  ('/',               [OrderController::class, 'index']);
+        Route::post ('/',               [OrderController::class, 'store']);
+        Route::post ('/sync-abandoned', [OrderController::class, 'syncAbandoned']);
+        Route::put  ('/bulk/status',    [OrderController::class, 'bulkUpdateStatus']);
+        Route::put  ('/bulk/assign',    [OrderController::class, 'bulkAssign']);
+        Route::get  ('/{id}',           [OrderController::class, 'show']);
+        Route::put  ('/{id}',           [OrderController::class, 'update']);
+        Route::post ('/{id}/assign',    [OrderController::class, 'assign']);
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Products
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('products')->group(function () {
-
-        Route::delete('/bulk/delete', [
-            ProductController::class,
-            'bulkDestroy'
-        ]);
-
-        Route::put('/bulk/status', [
-            ProductController::class,
-            'bulkUpdateStatus'
-        ]);
-
-        Route::get('/summary', [
-            ProductController::class,
-            'summary'
-        ]);
-    });
-
-    Route::apiResource(
-        'products',
-        ProductController::class
-    );
-
-    Route::post(
-        '/products/{id}/duplicate',
-        [ProductController::class, 'duplicate']
-    );
 
     /*
     |--------------------------------------------------------------------------
@@ -322,41 +176,13 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('team')->group(function () {
-
-        Route::get('/', [
-            TeamController::class,
-            'index'
-        ]);
-
-        Route::post('/members', [
-            TeamController::class,
-            'storeMember'
-        ]);
-
-        Route::put('/members/{id}', [
-            TeamController::class,
-            'updateMember'
-        ]);
-
-        Route::delete('/members/{id}', [
-            TeamController::class,
-            'destroyMember'
-        ]);
-
-        Route::get('/settings', [
-            TeamController::class,
-            'settings'
-        ]);
-
-        Route::post('/settings', [
-            TeamController::class,
-            'updateSettings'
-        ]);
-
-        Route::post('/impersonate/{id}', [
-            TeamController::class,
-            'impersonate'
-        ]);
+        Route::get   ('/',                    [TeamController::class, 'index']);
+        Route::post  ('/members',             [TeamController::class, 'storeMember']);
+        Route::put   ('/members/{id}',        [TeamController::class, 'updateMember']);
+        Route::delete('/members/{id}',        [TeamController::class, 'destroyMember']);
+        Route::get   ('/settings',            [TeamController::class, 'settings']);
+        Route::post  ('/settings',            [TeamController::class, 'updateSettings']);
+        Route::post  ('/impersonate/{id}',    [TeamController::class, 'impersonate']);
     });
 
     /*
@@ -366,36 +192,12 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('shipments')->group(function () {
-
-        Route::get('/', [
-            ShipmentController::class,
-            'index'
-        ]);
-
-        Route::post('/', [
-            ShipmentController::class,
-            'store'
-        ]);
-
-        Route::get('/{id}', [
-            ShipmentController::class,
-            'show'
-        ]);
-
-        Route::put('/{id}', [
-            ShipmentController::class,
-            'update'
-        ]);
-
-        Route::delete('/{id}', [
-            ShipmentController::class,
-            'destroy'
-        ]);
-
-        Route::get('/{id}/tracking', [
-            ShipmentController::class,
-            'getTracking'
-        ]);
+        Route::get   ('/',              [ShipmentController::class, 'index']);
+        Route::post  ('/',              [ShipmentController::class, 'store']);
+        Route::get   ('/{id}',          [ShipmentController::class, 'show']);
+        Route::put   ('/{id}',          [ShipmentController::class, 'update']);
+        Route::delete('/{id}',          [ShipmentController::class, 'destroy']);
+        Route::get   ('/{id}/tracking', [ShipmentController::class, 'getTracking']);
     });
 
     /*
@@ -405,41 +207,13 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('companies')->group(function () {
-
-        Route::get('/', [
-            DeliveryCompanyController::class,
-            'index'
-        ]);
-
-        Route::get('/{id}', [
-            DeliveryCompanyController::class,
-            'show'
-        ]);
-
-        Route::post('/{id}/connect', [
-            DeliveryCompanyController::class,
-            'connect'
-        ]);
-
-        Route::post('/{id}/disconnect', [
-            DeliveryCompanyController::class,
-            'disconnect'
-        ]);
-
-        Route::post('/{id}/enable-updates', [
-            DeliveryCompanyController::class,
-            'enableOrdersUpdates'
-        ]);
-
-        Route::post('/{id}/disable-updates', [
-            DeliveryCompanyController::class,
-            'disableOrdersUpdates'
-        ]);
-
-        Route::get('/{id}/test-connection', [
-            DeliveryCompanyController::class,
-            'testConnection'
-        ]);
+        Route::get ('/',                     [DeliveryCompanyController::class, 'index']);
+        Route::get ('/{id}',                 [DeliveryCompanyController::class, 'show']);
+        Route::post('/{id}/connect',         [DeliveryCompanyController::class, 'connect']);
+        Route::post('/{id}/disconnect',      [DeliveryCompanyController::class, 'disconnect']);
+        Route::post('/{id}/enable-updates',  [DeliveryCompanyController::class, 'enableOrdersUpdates']);
+        Route::post('/{id}/disable-updates', [DeliveryCompanyController::class, 'disableOrdersUpdates']);
+        Route::get ('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
 
     /*
@@ -449,21 +223,9 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('order-statuses')->group(function () {
-
-        Route::get('/', [
-            OrderStatusController::class,
-            'index'
-        ]);
-
-        Route::post('/{id}/auto-send', [
-            OrderStatusController::class,
-            'toggleAutoSend'
-        ]);
-
-        Route::post('/{id}/save-template', [
-            OrderStatusController::class,
-            'saveTemplate'
-        ]);
+        Route::get ('/',                    [OrderStatusController::class, 'index']);
+        Route::post('/{id}/auto-send',      [OrderStatusController::class, 'toggleAutoSend']);
+        Route::post('/{id}/save-template',  [OrderStatusController::class, 'saveTemplate']);
     });
 
     /*
@@ -473,28 +235,9 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('company-statuses')->group(function () {
-
-        Route::post('/{id}/auto-send', [
-            OrderStatusController::class,
-            'toggleAutoSend'
-        ]);
-
-        Route::post('/{id}/save-template', [
-            OrderStatusController::class,
-            'saveTemplate'
-        ]);
+        Route::post('/{id}/auto-send',     [OrderStatusController::class, 'toggleAutoSend']);
+        Route::post('/{id}/save-template', [OrderStatusController::class, 'saveTemplate']);
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Uploads
-    |--------------------------------------------------------------------------
-    */
-
-    Route::post('/upload', [
-        UploadController::class,
-        'store'
-    ]);
 
     /*
     |--------------------------------------------------------------------------
@@ -503,30 +246,17 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('clients')->group(function () {
-
-        Route::get('/', [
-            ClientController::class,
-            'index'
-        ]);
-
-        Route::get('/{id}', [
-            ClientController::class,
-            'show'
-        ]);
-
-        Route::put('/{id}', [
-            ClientController::class,
-            'update'
-        ]);
-
-        Route::delete('/{id}', [
-            ClientController::class,
-            'destroy'
-        ]);
+        Route::get   ('/',      [ClientController::class, 'index']);
+        Route::get   ('/{id}', [ClientController::class, 'show']);
+        Route::put   ('/{id}', [ClientController::class, 'update']);
+        Route::delete('/{id}', [ClientController::class, 'destroy']);
     });
-});
 
-Route::post(
-    'shopify/webhook/{shopDomain}',
-    [ShopifyWebhookController::class, 'handle']
-)->where('shopDomain', '[a-z0-9\-]+\.myshopify\.com');
+    /*
+    |--------------------------------------------------------------------------
+    | Uploads
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/upload', [UploadController::class, 'store']);
+});
