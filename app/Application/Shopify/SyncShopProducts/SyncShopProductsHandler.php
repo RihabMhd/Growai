@@ -2,8 +2,8 @@
 
 namespace App\Application\Shopify\SyncShopProducts;
 
-use App\Jobs\SyncShopifyProductsJob;
 use App\Application\Shopify\Contracts\ShopRepositoryInterface;
+use App\Infrastructure\Shopify\Jobs\SyncProductsJob;
 
 final readonly class SyncShopProductsHandler
 {
@@ -18,7 +18,7 @@ final readonly class SyncShopProductsHandler
             $command->shopId
         );
 
-        SyncShopifyProductsJob::dispatch(
+        SyncProductsJob::dispatch(
             $shop
         );
     }

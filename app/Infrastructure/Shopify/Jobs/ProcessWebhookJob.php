@@ -18,30 +18,25 @@ class ProcessWebhookJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    public int $backoff = 10;
+
     public function __construct(
-        public ShopifyWebhookPayloadDTO $payload
+        public readonly ShopifyWebhookPayloadDTO $payload
     ) {}
 
     public function handle(
         ShopifyWebhookHandler $handler
     ): void {
-
         try {
-
-            $handler->handle(
-                $this->payload
-            );
-
+            $handler->handle($this->payload);
         } catch (\Throwable $exception) {
-
-            Log::error(
-                'Shopify webhook processing failed',
-                [
-                    'topic' => $this->payload->topic,
-                    'shop' => $this->payload->shopDomain,
-                    'error' => $exception->getMessage(),
-                ]
-            );
+            Log::error('Shopify webhook processing failed', [
+                'topic'       => $this->payload->topic,
+                'shop_domain' => $this->payload->shopDomain,
+                'error'       => $exception->getMessage(),
+            ]);
 
             throw $exception;
         }
