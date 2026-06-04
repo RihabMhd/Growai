@@ -18,9 +18,12 @@ final class ShopifyProductMapper
             image: $this->extractImage($product),
             images: $this->extractImages($product),
             variants: $this->extractVariants($product),
-            status: ($product['status'] ?? 'active') === 'active'
-                ? 'active'
-                : 'inactive',
+            status: match ($product['status'] ?? 'draft') {
+                'active' => 'active',
+                'draft' => 'draft',
+                'archived' => 'archived',
+                default => 'draft',
+            },
         );
     }
 

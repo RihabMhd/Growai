@@ -6,6 +6,7 @@ use App\Application\Shopify\Contracts\ShopifyClientInterface;
 use App\Domain\Shopify\Exceptions\ShopifyApiException;
 use App\Domain\Shopify\Models\Shop;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class ShopifyClient implements ShopifyClientInterface
 {
@@ -92,24 +93,31 @@ final class ShopifyClient implements ShopifyClientInterface
             $endpoint
         );
 
-        $response = Http::withHeaders([
+        $client = Http::withHeaders([
             'X-Shopify-Access-Token' => $shop->access_token,
             'Accept' => 'application/json',
-        ])->send(
-            $method,
-            $url,
-            [
-                'json' => $payload,
-            ]
-        );
+        ]);
 
-        if (! $response->successful()) {
+        $response = match ($method) {
+            'GET' => $client->get($url, $payload),
+            'POST' => $client->post($url, $payload),
+            'PUT' => $client->put($url, $payload),
+            'DELETE' => $client->delete($url),
+            default => $client->send($method, $url, [
+                'json' => $payload,
+            ]),
+        };
+
+        if ($response->failed()) {
+
+            Log::error('Shopify Response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'url' => $url,
+            ]);
+
             throw new ShopifyApiException(
-                sprintf(
-                    'Shopify API request failed [%s]: %s',
-                    $response->status(),
-                    $response->body()
-                )
+                $response->body()
             );
         }
 

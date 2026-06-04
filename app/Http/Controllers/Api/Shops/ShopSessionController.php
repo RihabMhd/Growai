@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Shops;
+namespace App\Http\Controllers\Api\Shops;
 
 use App\Domain\Shopify\Models\Shop;
 use App\Http\Controllers\Controller;

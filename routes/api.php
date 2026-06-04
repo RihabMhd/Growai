@@ -21,8 +21,8 @@ use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\UploadController;
 
-use App\Http\Controllers\Products\ProductController;
-use App\Http\Controllers\Shops\ShopSessionController;
+use App\Http\Controllers\Api\Products\ProductController;
+use App\Http\Controllers\Api\Shops\ShopSessionController;
 
 /*
 |--------------------------------------------------------------------------

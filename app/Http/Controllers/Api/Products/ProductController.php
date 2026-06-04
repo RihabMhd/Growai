@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Products;
+namespace App\Http\Controllers\Api\Products;
 
 use App\Application\Products\CreateProduct\CreateProductCommand;
 use App\Application\Products\CreateProduct\CreateProductHandler;

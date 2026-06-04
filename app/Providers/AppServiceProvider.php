@@ -32,6 +32,9 @@ use App\Infrastructure\Shopify\Clients\ShopifyClient;
 use App\Infrastructure\Shopify\OAuth\ShopifyOAuthClient;
 use App\Infrastructure\Shopify\Webhooks\ShopifyWebhookHandler;
 
+use App\Domain\Shopify\Contracts\ShopifyProductClientInterface;
+use App\Infrastructure\Shopify\NullShopifyProductClient;
+
 use App\Domain\Products\Contracts\ProductRepositoryInterface;
 use App\Infrastructure\Products\Repositories\EloquentProductRepository;
 
@@ -54,7 +57,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ShopifyClientInterface::class, ShopifyClient::class);
         $this->app->bind(ShopifyOAuthClientInterface::class, ShopifyOAuthClient::class);
         $this->app->bind(ShopifyWebhookProcessorInterface::class, ShopifyWebhookHandler::class);
-        $this->app->bind(ProductRepositoryInterface::class,EloquentProductRepository::class,);
+        $this->app->bind(ProductRepositoryInterface::class,EloquentProductRepository::class);
+        $this->app->bind(ShopifyProductClientInterface::class, NullShopifyProductClient::class);
     }
 
     /**
