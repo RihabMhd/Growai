@@ -185,9 +185,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('shopify')->group(function () {
 
-        Route::get('/shops',                  [ShopifyController::class, 'listShops']);
-        Route::get('/status',                 [ShopifyController::class, 'status']);
 
+        Route::get('/status', [
+            ShopifyController::class,
+            'status'
+        ]);
+        
         Route::post('/sync-products', [
             ShopifyController::class,
             'syncProducts'
@@ -207,6 +210,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         Route::prefix('shops')->group(function () {
+
+            Route::get('/', [
+                ShopifyController::class,
+                'listShops'
+            ]);
 
             Route::patch('/{shop}', [
                 ShopifyController::class,
