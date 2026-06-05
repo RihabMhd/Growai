@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ClientFactory extends Factory
 {
+    protected $model = \App\Domain\Clients\Models\Client::class;
+
     /**
      * Define the model's default state.
      *

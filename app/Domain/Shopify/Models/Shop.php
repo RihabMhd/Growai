@@ -20,6 +20,7 @@ class Shop extends Model
         'boutique_name',
         'last_synced_at',
         'webhook_secret',
+        'shopify_location_id',
     ];
 
     protected $casts = [

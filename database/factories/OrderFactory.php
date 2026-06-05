@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class OrderFactory extends Factory
 {
+    protected $model = \App\Domain\Orders\Models\Order::class;
+
     /**
      * Define the model's default state.
      *

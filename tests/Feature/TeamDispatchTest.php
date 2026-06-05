@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
-use App\Models\Team;
-use App\Models\User;
-use App\Models\Client;
-use App\Models\Shop;
+use App\Domain\Orders\Models\Order;
+use App\Domain\Orders\Models\OrderItem;
+use App\Domain\Products\Models\Product;
+use App\Domain\Teams\Models\Team;
+use App\Domain\Teams\Models\User;
+use App\Domain\Clients\Models\Client;
+use App\Domain\Shopify\Models\Shop;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -39,18 +39,28 @@ class TeamDispatchTest extends TestCase
         // Seed products
         $this->products = [
             Product::create([
-                'name' => 'iPhone 15',
-                'sku' => 'IP15',
-                'price' => 1000.00,
-                'stock' => 50,
-                'source_type' => 'manual'
+                'title' => 'iPhone 15',
+                'source_type' => 'manual',
+                'variants' => [
+                    [
+                        'title' => 'Default Title',
+                        'sku' => 'IP15',
+                        'price' => 1000.00,
+                        'stock' => 50,
+                    ]
+                ]
             ]),
             Product::create([
-                'name' => 'Samsung S24',
-                'sku' => 'S24',
-                'price' => 900.00,
-                'stock' => 50,
-                'source_type' => 'manual'
+                'title' => 'Samsung S24',
+                'source_type' => 'manual',
+                'variants' => [
+                    [
+                        'title' => 'Default Title',
+                        'sku' => 'S24',
+                        'price' => 900.00,
+                        'stock' => 50,
+                    ]
+                ]
             ])
         ];
     }
@@ -98,7 +108,7 @@ class TeamDispatchTest extends TestCase
         OrderItem::create([
             'order_id' => $order1->id,
             'product_id' => $this->products[0]->id,
-            'product_name' => $this->products[0]->name,
+            'product_name' => $this->products[0]->title,
             'quantity' => 1,
             'unit_price' => 1000.00,
             'total_price' => 1000.00
@@ -118,7 +128,7 @@ class TeamDispatchTest extends TestCase
         OrderItem::create([
             'order_id' => $order2->id,
             'product_id' => $this->products[1]->id,
-            'product_name' => $this->products[1]->name,
+            'product_name' => $this->products[1]->title,
             'quantity' => 1,
             'unit_price' => 900.00,
             'total_price' => 900.00
@@ -137,7 +147,7 @@ class TeamDispatchTest extends TestCase
         OrderItem::create([
             'order_id' => $order3->id,
             'product_id' => $this->products[0]->id,
-            'product_name' => $this->products[0]->name,
+            'product_name' => $this->products[0]->title,
             'quantity' => 1,
             'unit_price' => 1000.00,
             'total_price' => 1000.00
@@ -188,7 +198,7 @@ class TeamDispatchTest extends TestCase
         OrderItem::create([
             'order_id' => $iphoneOrder->id,
             'product_id' => $this->products[0]->id,
-            'product_name' => $this->products[0]->name,
+            'product_name' => $this->products[0]->title,
             'quantity' => 1,
             'unit_price' => 1000.00,
             'total_price' => 1000.00
@@ -205,7 +215,7 @@ class TeamDispatchTest extends TestCase
         OrderItem::create([
             'order_id' => $samsungOrder->id,
             'product_id' => $this->products[1]->id,
-            'product_name' => $this->products[1]->name,
+            'product_name' => $this->products[1]->title,
             'quantity' => 1,
             'unit_price' => 900.00,
             'total_price' => 900.00

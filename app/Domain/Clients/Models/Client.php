@@ -10,6 +10,11 @@ class Client extends Model
 {
     use HasFactory;
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\ClientFactory::new();
+    }
+
     protected $fillable = [
         'name',
         'phone',

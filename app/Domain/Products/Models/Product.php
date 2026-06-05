@@ -7,10 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use App\Domain\Orders\Models\OrderItem;
-use App\Domain\Shops\Models\Shop;
+use App\Domain\Shopify\Models\Shop;
 class Product extends Model
 {
     use HasFactory;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\ProductFactory::new();
+    }
 
     protected $table = 'products';
 
