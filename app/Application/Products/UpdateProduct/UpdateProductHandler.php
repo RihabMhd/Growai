@@ -44,7 +44,10 @@ final class UpdateProductHandler
 
         $shop = $product->shop; // BelongsTo already defined on Product
 
-        $payload = $this->buildShopifyPayload($command->data);
+        $payload = $this->buildShopifyPayload(
+            $command->data,
+            $product
+        );
 
         // Throws ShopifyApiException on failure — bubbles to controller, local DB not touched
         $this->shopifyClient->updateProduct(
