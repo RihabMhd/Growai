@@ -3,7 +3,7 @@
 namespace App\Infrastructure\Shopify\Mappers;
 
 use App\Domain\Shopify\DTOs\ShopifyProductDTO;
-
+use Illuminate\Support\Facades\Log;
 final class ShopifyProductMapper
 {
     public function toDto(array $product): ShopifyProductDTO
@@ -30,22 +30,22 @@ final class ShopifyProductMapper
     private function extractVariants(array $product): array
     {
         $variants = [];
-
+        Log::info('SHOPIFY_VARIANT', $product['variants'][0]);
         foreach ($product['variants'] ?? [] as $variant) {
-
             $variants[] = [
-                'title' => $variant['title'] ?? 'Default',
-                'sku' => $variant['sku'] ?? null,
-                'price' => (float) ($variant['price'] ?? 0),
-                'compare_at_price' => isset($variant['compare_at_price'])
-                    ? (float) $variant['compare_at_price']
-                    : null,
-                'cost' => isset($variant['cost'])
-                    ? (float) $variant['cost']
-                    : null,
-                'stock' => (int) ($variant['inventory_quantity'] ?? 0),
+                'title'                       => $variant['title'] ?? 'Default',
+                'sku'                         => $variant['sku'] ?? null,
+                'price'                       => (float) ($variant['price'] ?? 0),
+                'stock'                       => (int) ($variant['inventory_quantity'] ?? 0),
+                'compare_at_price'            => $variant['compare_at_price'] ?? null,
+
+                // NEW FIELDS
+                'external_variant_id'         => (string) ($variant['id'] ?? ''),
+                'external_inventory_item_id'  => (string) ($variant['inventory_item_id'] ?? ''),
             ];
         }
+        Log::info('SHOPIFY_VARIANT', $product['variants'][0]);
+        
 
         return $variants;
     }

@@ -32,11 +32,11 @@ final readonly class ShopifyProductImporter
                 'shop_id',
                 $shop->id
             )
-            ->where(
-                'external_product_id',
-                $dto->id
-            )
-            ->exists();
+                ->where(
+                    'external_product_id',
+                    $dto->id
+                )
+                ->exists();
 
             $this->upsert(
                 $shop,
@@ -72,6 +72,10 @@ final readonly class ShopifyProductImporter
         Shop $shop,
         ShopifyProductDTO $dto
     ): Product {
+        Log::info('DTO_VARIANTS', [
+            'product_id' => $dto->id,
+            'variants' => $dto->variants,
+        ]);
 
         return Product::updateOrCreate(
             [
@@ -102,13 +106,13 @@ final readonly class ShopifyProductImporter
             'shop_id',
             $shop->id
         )
-        ->where(
-            'external_product_id',
-            $productId
-        )
-        ->update([
-            'status' => 'deleted',
-        ]);
+            ->where(
+                'external_product_id',
+                $productId
+            )
+            ->update([
+                'status' => 'deleted',
+            ]);
     }
 
     public function updateFromWebhook(
@@ -124,25 +128,24 @@ final readonly class ShopifyProductImporter
             'shop_id',
             $shop->id
         )
-        ->where(
-            'external_product_id',
-            $dto->id
-        )
-        ->tap(function ($query) use ($dto) {
+            ->where(
+                'external_product_id',
+                $dto->id
+            )
+            ->tap(function ($query) use ($dto) {
 
-            $query->update([
-                'title' => $dto->title,
-                'vendor' => $dto->vendor,
-                'product_type' => $dto->productType,
-                'handle' => $dto->handle,
-                'status' => $dto->status,
-                'image' => $dto->image,
-                'images' => $dto->images,
-                'description' => $dto->description,
-                'variants' => $dto->variants,
-            ]);
-
-        })
-        ->first();
+                $query->update([
+                    'title' => $dto->title,
+                    'vendor' => $dto->vendor,
+                    'product_type' => $dto->productType,
+                    'handle' => $dto->handle,
+                    'status' => $dto->status,
+                    'image' => $dto->image,
+                    'images' => $dto->images,
+                    'description' => $dto->description,
+                    'variants' => $dto->variants,
+                ]);
+            })
+            ->first();
     }
 }

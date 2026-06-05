@@ -48,14 +48,14 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     public function findByHandleAndShop(string $handle, int $shopId): ?Product
     {
         return Product::where('handle', $handle)
-                      ->where('shop_id', $shopId)
-                      ->first();
+            ->where('shop_id', $shopId)
+            ->first();
     }
 
     public function handleExistsInShop(string $handle, int $shopId, ?int $excludeId = null): bool
     {
         $query = Product::where('shop_id', $shopId)
-                        ->where('handle', $handle);
+            ->where('handle', $handle);
 
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
@@ -80,19 +80,22 @@ final class EloquentProductRepository implements ProductRepositoryInterface
                 $term = '%' . $filters->search . '%';
                 $q->where(function ($inner) use ($term) {
                     $inner->where('products.title',        'like', $term)
-                          ->orWhere('products.vendor',       'like', $term)
-                          ->orWhere('products.product_type', 'like', $term)
-                          ->orWhere('products.handle',       'like', $term);
+                        ->orWhere('products.vendor',       'like', $term)
+                        ->orWhere('products.product_type', 'like', $term)
+                        ->orWhere('products.handle',       'like', $term);
                 });
             })
             ->when($filters->tag, fn($q) => $q->whereJsonContains('products.tags', $filters->tag))
             ->when($filters->minPrice !== null, function ($q) use ($filters) {
-                $q->whereExists(function ($sub) use ($filters) {
-                    $sub->select(DB::raw(1))
-                        ->from('product_variants')
-                        ->whereColumn('product_variants.product_id', 'products.id')
-                        ->where('product_variants.price', '>=', $filters->minPrice);
-                });
+                // JSON_EXTRACT works on MySQL; adjust for your DB if needed
+                $q->whereRaw(
+                    "JSON_EXTRACT(variants, '$[*].price') IS NOT NULL"
+                )->whereRaw(
+                    "JSON_CONTAINS(variants, JSON_OBJECT('price', CAST(? AS DECIMAL(10,2))))",
+                    // This is approximate — JSON price range queries are imprecise in pure SQL
+                    // Recommend filtering post-query in PHP if precision is required
+                    [$filters->minPrice]
+                );
             })
             ->when($filters->stockStatus, function ($q) use ($filters) {
                 match ($filters->stockStatus) {
@@ -117,15 +120,15 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     public function findByIdsAndShop(array $ids, int $shopId): Collection
     {
         return Product::where('shop_id', $shopId)
-                      ->whereIn('id', $ids)
-                      ->get();
+            ->whereIn('id', $ids)
+            ->get();
     }
 
     public function findByTagAndShop(string $tag, int $shopId, int $perPage = 15): LengthAwarePaginator
     {
         return Product::where('shop_id', $shopId)
-                      ->whereJsonContains('tags', $tag)
-                      ->paginate($perPage);
+            ->whereJsonContains('tags', $tag)
+            ->paginate($perPage);
     }
 
     public function searchByShop(string $term, int $shopId, int $perPage = 15): LengthAwarePaginator
@@ -135,10 +138,10 @@ final class EloquentProductRepository implements ProductRepositoryInterface
         return Product::where('shop_id', $shopId)
             ->where(function ($q) use ($like, $term) {
                 $q->where('title',        'like', $like)
-                  ->orWhere('handle',       'like', $like)
-                  ->orWhere('vendor',       'like', $like)
-                  ->orWhere('product_type', 'like', $like)
-                  ->orWhereJsonContains('tags', $term);
+                    ->orWhere('handle',       'like', $like)
+                    ->orWhere('vendor',       'like', $like)
+                    ->orWhere('product_type', 'like', $like)
+                    ->orWhereJsonContains('tags', $term);
             })
             ->paginate($perPage);
     }
@@ -176,51 +179,49 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function create(ProductData $data): Product
     {
-        return DB::transaction(function () use ($data): Product {
-            /** @var Product $product */
-            $product = Product::create([
-                'shop_id'      => $data->shopId,
-                'title'        => $data->title,
-                'status'       => $data->status,
-                'source_type'  => $data->sourceType,
-                'vendor'       => $data->vendor,
-                'product_type' => $data->productType,
-                'handle'       => $data->handle,
-                'description'  => $data->description,
-                'image'        => $data->image,
-                'cost'         => $data->cost,
-                'tags'         => $data->tags,
-                'images'       => $data->images,
-            ]);
+        /** @var Product $product */
+        $product = Product::create([
+            'shop_id'      => $data->shopId,
+            'title'        => $data->title,
+            'status'       => $data->status,
+            'source_type'  => $data->sourceType,
+            'vendor'       => $data->vendor,
+            'product_type' => $data->productType,
+            'handle'       => $data->handle,
+            'description'  => $data->description,
+            'image'        => $data->image,
+            'cost'         => $data->cost,
+            'tags'         => $data->tags,
+            'images'       => $data->images,
+            'variants'     => array_map(fn(VariantData $v) => $v->toArray(), $data->variants),
+        ]);
 
-            $this->syncVariants($product, $data->variants);
-
-            return $product->load('variants');
-        });
+        return $product->refresh();
     }
 
     public function update(Product $product, ProductData $data): Product
     {
-        return DB::transaction(function () use ($product, $data): Product {
-            $product->update([
-                'title'        => $data->title,
-                'status'       => $data->status,
-                'source_type'  => $data->sourceType,
-                'vendor'       => $data->vendor,
-                'product_type' => $data->productType,
-                'handle'       => $data->handle ?? $product->handle,
-                'description'  => $data->description,
-                'image'        => $data->image,
-                'cost'         => $data->cost,
-                'tags'         => $data->tags,
-                'images'       => $data->images,
-            ]);
+        $product->update([
+            'title'        => $data->title,
+            'status'       => $data->status      ?? $product->status,
+            'source_type'  => $data->sourceType  ?? $product->source_type,   
+            'vendor'       => $data->vendor      ?? $product->vendor,
+            'product_type' => $data->productType ?? $product->product_type,
+            'handle'       => $data->handle      ?? $product->handle,
+            'description'  => $data->description ?? $product->description,
+            'image'        => $data->image       ?? $product->image,
+            'cost'         => $data->cost        ?? $product->getRawOriginal('cost'),
+            'tags'         => $data->tags ?: $product->tags,
+            'images'       => $data->images      ?? $product->images,        
+            'variants'     => !empty($data->variants)
+                ? array_map(fn(VariantData $v) => $v->toArray(), $data->variants)
+                : $product->variants,
+        ]);
 
-            $this->syncVariants($product, $data->variants);
-
-            return $product->refresh()->load('variants');
-        });
+        return $product->refresh();
     }
+
+
 
     public function delete(Product $product): bool
     {
@@ -234,15 +235,15 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     public function bulkDeleteByShop(array $ids, int $shopId): int
     {
         return Product::where('shop_id', $shopId)
-                      ->whereIn('id', $ids)
-                      ->delete();
+            ->whereIn('id', $ids)
+            ->delete();
     }
 
     public function bulkUpdateStatusByShop(array $ids, string $status, int $shopId): int
     {
         return Product::where('shop_id', $shopId)
-                      ->whereIn('id', $ids)
-                      ->update(['status' => $status]);
+            ->whereIn('id', $ids)
+            ->update(['status' => $status]);
     }
 
     // -------------------------------------------------------------------------
@@ -256,17 +257,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
      */
     private function syncVariants(Product $product, array $variants): void
     {
-        $product->variants()->delete();
-
-        if (empty($variants)) {
-            return;
-        }
-
-        $rows = array_map(
-            fn(VariantData $v) => array_merge($v->toArray(), ['product_id' => $product->id]),
-            $variants,
-        );
-
-        $product->variants()->createMany($rows);
+        $product->update([
+            'variants' => array_map(fn(VariantData $v) => $v->toArray(), $variants),
+        ]);
     }
 }

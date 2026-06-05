@@ -12,6 +12,31 @@ final class ShopifyClient implements ShopifyClientInterface
 {
     private const API_VERSION = '2025-01';
 
+    public function fetchPrimaryLocationId(Shop $shop): ?string
+    {
+        $response = $this->request($shop, 'GET', '/locations.json');
+
+        return $response['locations'][0]['id'] ?? null;
+    }
+
+    public function setInventoryLevel(
+        Shop $shop,
+        string $inventoryItemId,
+        string $locationId,
+        int $quantity
+    ): void {
+        $this->request(
+            $shop,
+            'POST',
+            '/inventory_levels/set.json',
+            [
+                'location_id' => $locationId,
+                'inventory_item_id' => $inventoryItemId,
+                'available' => $quantity,
+            ]
+        );
+    }
+
     public function fetchProducts(Shop $shop): array
     {
         $response = $this->request(
@@ -122,5 +147,17 @@ final class ShopifyClient implements ShopifyClientInterface
         }
 
         return $response->json();
+    }
+
+    public function updateProduct(Shop $shop, string $productId, array $payload): array
+    {
+        $response = $this->request(
+            $shop,
+            'PUT',
+            "/products/{$productId}.json",
+            ['product' => $payload]
+        );
+
+        return $response['product'] ?? [];
     }
 }

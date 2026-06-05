@@ -13,8 +13,8 @@ final class ProductData
     public function __construct(
         public readonly int     $shopId,
         public readonly string  $title,
-        public readonly string  $status,
-        public readonly string  $sourceType,
+        public readonly ?string $status,
+        public readonly ?string $sourceType,
         public readonly ?string $vendor,
         public readonly ?string $productType,
         public readonly ?string $handle,
@@ -23,25 +23,25 @@ final class ProductData
         public readonly ?float  $cost,
         public readonly array   $tags,
         public readonly array   $variants,
-        public readonly array   $images,
+        public readonly ?array  $images,
     ) {}
 
     public static function fromArray(array $data): self
     {
         return new self(
-            shopId:      (int) $data['shop_id'],
-            title:       $data['title'],
-            status:      $data['status'] ?? 'draft',
-            sourceType:  $data['source_type'] ?? 'manual',
-            vendor:      $data['vendor'] ?? null,
+            shopId: (int) $data['shop_id'],
+            title: $data['title'],
+            status: $data['status']       ?? null,
+            sourceType: $data['source_type']  ?? null,                                          
+            vendor: $data['vendor']       ?? null,
             productType: $data['product_type'] ?? null,
-            handle:      isset($data['handle']) && $data['handle'] !== '' ? $data['handle'] : null,
-            description: $data['description'] ?? null,
-            image:       $data['image'] ?? null,
-            cost:        isset($data['cost']) ? (float) $data['cost'] : null,
-            tags:        self::normalizeTags($data),
-            variants:    self::normalizeVariants($data['variants'] ?? []),
-            images:      $data['images'] ?? [],
+            handle: isset($data['handle']) && $data['handle'] !== '' ? $data['handle'] : null,
+            description: $data['description']  ?? null,
+            image: $data['image']        ?? null,
+            cost: isset($data['cost'])   ? (float) $data['cost'] : null,
+            tags: self::normalizeTags($data),
+            variants: self::normalizeVariants($data['variants'] ?? []),
+            images: array_key_exists('images', $data) ? $data['images'] : null,            
         );
     }
 

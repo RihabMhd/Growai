@@ -13,20 +13,22 @@ final readonly class ShopifyService
         private ShopifyProductImporter $importer,
     ) {}
 
-    public function syncProducts(
-        Shop $shop
-    ): array {
+    public function syncProducts(Shop $shop): array
+    {
+        if (!$shop->shopify_location_id) {
+            $locationId = $this->client->fetchPrimaryLocationId($shop);
 
-        $products = $this->client
-            ->fetchProducts($shop);
+            if ($locationId) {
+                $shop->update([
+                    'shopify_location_id' => $locationId,
+                ]);
+            }
+        }
 
-        return $this->importer
-            ->sync(
-                $shop,
-                $products
-            );
+        $products = $this->client->fetchProducts($shop);
+
+        return $this->importer->sync($shop, $products);
     }
-
     public function testConnection(
         Shop $shop
     ): bool {
