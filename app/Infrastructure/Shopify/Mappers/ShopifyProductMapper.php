@@ -30,7 +30,6 @@ final class ShopifyProductMapper
     private function extractVariants(array $product): array
     {
         $variants = [];
-        Log::info('SHOPIFY_VARIANT', $product['variants'][0]);
         foreach ($product['variants'] ?? [] as $variant) {
             $variants[] = [
                 'title'                       => $variant['title'] ?? 'Default',
@@ -44,7 +43,6 @@ final class ShopifyProductMapper
                 'external_inventory_item_id'  => (string) ($variant['inventory_item_id'] ?? ''),
             ];
         }
-        Log::info('SHOPIFY_VARIANT', $product['variants'][0]);
         
 
         return $variants;

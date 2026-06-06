@@ -30,9 +30,9 @@ final class ShopifyClient implements ShopifyClientInterface
             'POST',
             '/inventory_levels/set.json',
             [
-                'location_id' => $locationId,
+                'location_id'       => $locationId,
                 'inventory_item_id' => $inventoryItemId,
-                'available' => $quantity,
+                'available'         => $quantity,
             ]
         );
     }
