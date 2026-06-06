@@ -6,6 +6,7 @@ use App\Domain\Products\Contracts\ProductRepositoryInterface;
 use App\Domain\Products\Models\Product;
 use App\Application\Shopify\Contracts\ShopifyClientInterface;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 final class UpdateProductHandler
 {
@@ -35,6 +36,71 @@ final class UpdateProductHandler
         return $this->handleManualProduct($product, $command);
     }
 
+    private function syncInventory(
+        Product $product,
+        \App\Domain\Products\DTOs\ProductData $data
+    ): void {
+        Log::info('SYNC_DEBUG', [
+            'variants' => $data->variants,
+            'storedVariants' => $product->variants,
+        ]);
+
+        if (empty($data->variants)) {
+            return;
+        }
+
+        $shop = $product->shop;
+        $locationId = $shop->shopify_location_id;
+
+        if (empty($locationId)) {
+            Log::warning('Shopify inventory sync skipped: no location id', [
+                'shop_id' => $shop->id,
+            ]);
+            return;
+        }
+
+        $storedVariants = $product->variants ?? [];
+
+        foreach ($storedVariants as $index => $storedVariant) {
+
+            $inventoryItemId =
+                $storedVariant['external_inventory_item_id'] ?? null;
+
+            if (!$inventoryItemId) {
+                continue;
+            }
+
+            if (!isset($data->variants[$index])) {
+                continue;
+            }
+
+            $incomingVariant = $data->variants[$index];
+
+            $newStock = $incomingVariant instanceof \App\Domain\Products\DTOs\VariantData
+                ? $incomingVariant->stock
+                : ($incomingVariant['stock'] ?? null);
+
+            if ($newStock === null) {
+                continue;
+            }
+
+            Log::info('INVENTORY_SYNC', [
+                'product_id' => $product->id,
+                'inventory_item_id' => $inventoryItemId,
+                'location_id' => $locationId,
+                'stock' => $newStock,
+            ]);
+
+            $this->shopifyClient->setInventoryLevel(
+                $shop,
+                (string) $inventoryItemId,
+                (string) $locationId,
+                (int) $newStock
+            );
+        }
+    }
+
+
     // handleShopifyProduct — fix the call (was passing wrong args, no Shop):
     private function handleShopifyProduct(Product $product, UpdateProductCommand $command): Product
     {
@@ -49,16 +115,20 @@ final class UpdateProductHandler
             $product
         );
 
-        // Throws ShopifyApiException on failure — bubbles to controller, local DB not touched
         $this->shopifyClient->updateProduct(
             $shop,
             (string) $product->external_product_id,
             $payload
         );
 
-        // Shopify confirmed — mirror locally; webhook will overwrite with canonical data
-        return $this->repository->update($product, $command->data);
+        $updated = $this->repository->update($product, $command->data);
+
+        $this->syncInventory($updated, $command->data);
+
+        return $updated;
     }
+
+
 
     private function buildShopifyPayload(\App\Domain\Products\DTOs\ProductData $data, Product $product): array
     {
