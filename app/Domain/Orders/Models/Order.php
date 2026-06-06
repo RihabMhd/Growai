@@ -12,6 +12,7 @@ use App\Domain\Shopify\Models\Shop;
 use App\Domain\Teams\Models\User;
 use App\Domain\WhatsApp\Models\Message;
 use App\Domain\Shipments\Models\Shipment;
+
 class Order extends Model
 {
     use HasFactory;
@@ -32,10 +33,12 @@ class Order extends Model
         });
     }
 
+    // Add to $fillable array in app/Domain/Orders/Models/Order.php
     protected $fillable = [
         'shop_id',
         'client_id',
         'assigned_to',
+        'external_order_id',      // ← new
         'order_number',
         'total_price',
         'shipping_price',
@@ -43,20 +46,29 @@ class Order extends Model
         'currency',
         'status',
         'financial_status',
+        'fulfillment_status',     // ← new
         'commission_paid',
         'is_abandoned',
         'abandoned_at',
         'notes',
         'source_channel',
+        'customer_name',          // ← new
+        'customer_email',         // ← new
+        'customer_phone',         // ← new
+        'shipping_address',       // ← new
+        'order_date',             // ← new
     ];
 
+    // Add to $casts
     protected $casts = [
-        'is_abandoned' => 'boolean',
-        'abandoned_at' => 'datetime',
-        'commission_paid' => 'boolean',
-        'total_price' => 'float',
-        'shipping_price' => 'float',
-        'discount' => 'float'
+        'is_abandoned'     => 'boolean',
+        'abandoned_at'     => 'datetime',
+        'commission_paid'  => 'boolean',
+        'total_price'      => 'float',
+        'shipping_price'   => 'float',
+        'discount'         => 'float',
+        'shipping_address' => 'array',   // ← new
+        'order_date'       => 'datetime', // ← new
     ];
 
     public function client()

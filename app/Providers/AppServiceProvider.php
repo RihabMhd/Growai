@@ -57,8 +57,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ShopifyClientInterface::class, ShopifyClient::class);
         $this->app->bind(ShopifyOAuthClientInterface::class, ShopifyOAuthClient::class);
         $this->app->bind(ShopifyWebhookProcessorInterface::class, ShopifyWebhookHandler::class);
-        $this->app->bind(ProductRepositoryInterface::class,EloquentProductRepository::class);
+        $this->app->bind(ProductRepositoryInterface::class, EloquentProductRepository::class);
         $this->app->bind(ShopifyProductClientInterface::class, NullShopifyProductClient::class);
+        $this->app->bind(
+            \App\Application\Shopify\SyncShopOrders\SyncShopOrdersHandler::class,
+            fn($app) => new \App\Application\Shopify\SyncShopOrders\SyncShopOrdersHandler(
+                $app->make(\App\Application\Shopify\Contracts\ShopRepositoryInterface::class),
+                $app->make(\App\Application\Shopify\Contracts\ShopifyClientInterface::class),
+                $app->make(\App\Infrastructure\Shopify\Webhooks\OrderWebhookHandler::class),
+            )
+        );
     }
 
     /**

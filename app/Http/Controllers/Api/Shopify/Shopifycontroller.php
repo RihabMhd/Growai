@@ -21,9 +21,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use App\Application\Shopify\SyncShopOrders\SyncShopOrdersCommand;
+use App\Application\Shopify\SyncShopOrders\SyncShopOrdersHandler;
 
 final class ShopifyController extends Controller
 {
+    public function __construct(
+        private readonly SyncShopOrdersHandler $syncShopOrdersHandler,
+    ) {}
+
     public function status(
         Request $request,
         GetShopStatusHandler $handler
@@ -173,5 +179,19 @@ final class ShopifyController extends Controller
                 'This shop is inactive.'
             );
         }
+    }
+
+    public function syncOrders(Request $request, Shop $shop): JsonResponse
+    {
+        $this->authorizeShopAccess($request, $shop);
+
+        $this->syncShopOrdersHandler->handle(
+            new SyncShopOrdersCommand($shop->id)
+        );
+
+        return response()->json([
+            'message' => 'Order sync queued successfully.',
+            'shop_id' => $shop->id,
+        ]);
     }
 }
