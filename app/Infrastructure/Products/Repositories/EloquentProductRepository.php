@@ -201,10 +201,36 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function update(Product $product, ProductData $data): Product
     {
+        $storedVariants = collect($product->variants ?? []);
+
+        $mergedVariants = collect($data->variants)
+            ->map(function (VariantData $incoming, int $index) use ($storedVariants) {
+                $stored = $storedVariants->get($index, []);
+
+                $row = $incoming->toArray();
+
+                // Never overwrite Shopify identifiers with null
+                $row['external_variant_id'] = $incoming->externalVariantId
+                    ?? $stored['external_variant_id']
+                    ?? null;
+
+                $row['external_inventory_item_id'] = $incoming->externalInventoryItemId
+                    ?? $stored['external_inventory_item_id']
+                    ?? null;
+
+                // Preserve shopify_variant_id too
+                $row['shopify_variant_id'] = $incoming->shopifyVariantId
+                    ?? $stored['shopify_variant_id']
+                    ?? null;
+
+                return $row;
+            })
+            ->toArray();
+
         $product->update([
             'title'        => $data->title,
             'status'       => $data->status      ?? $product->status,
-            'source_type'  => $data->sourceType  ?? $product->source_type,   
+            'source_type'  => $data->sourceType  ?? $product->source_type,
             'vendor'       => $data->vendor      ?? $product->vendor,
             'product_type' => $data->productType ?? $product->product_type,
             'handle'       => $data->handle      ?? $product->handle,
@@ -212,10 +238,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             'image'        => $data->image       ?? $product->image,
             'cost'         => $data->cost        ?? $product->getRawOriginal('cost'),
             'tags'         => $data->tags ?: $product->tags,
-            'images'       => $data->images      ?? $product->images,        
-            'variants'     => !empty($data->variants)
-                ? array_map(fn(VariantData $v) => $v->toArray(), $data->variants)
-                : $product->variants,
+            'images'       => $data->images      ?? $product->images,
+            'variants'     => !empty($data->variants) ? $mergedVariants : $product->variants,
         ]);
 
         return $product->refresh();

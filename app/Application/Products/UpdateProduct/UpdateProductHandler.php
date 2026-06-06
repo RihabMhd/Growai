@@ -7,6 +7,8 @@ use App\Domain\Products\Models\Product;
 use App\Application\Shopify\Contracts\ShopifyClientInterface;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Domain\Products\DTOs\ProductData;
+use App\Domain\Products\DTOs\VariantData;
 
 final class UpdateProductHandler
 {
@@ -36,59 +38,63 @@ final class UpdateProductHandler
         return $this->handleManualProduct($product, $command);
     }
 
-    private function syncInventory(
-        Product $product,
-        \App\Domain\Products\DTOs\ProductData $data
-    ): void {
-        Log::info('SYNC_DEBUG', [
-            'variants' => $data->variants,
-            'storedVariants' => $product->variants,
-        ]);
-
+    private function syncInventory(Product $product, ProductData $data): void
+    {
         if (empty($data->variants)) {
             return;
         }
 
-        $shop = $product->shop;
+        $shop       = $product->shop;
         $locationId = $shop->shopify_location_id;
 
         if (empty($locationId)) {
-            Log::warning('Shopify inventory sync skipped: no location id', [
-                'shop_id' => $shop->id,
-            ]);
+            Log::warning('Shopify inventory sync skipped: no location id', ['shop_id' => $shop->id]);
             return;
         }
 
-        $storedVariants = $product->variants ?? [];
+        // Index stored variants by external_variant_id for O(1) lookup
+        $storedByVariantId = collect($product->variants ?? [])
+            ->filter(fn($v) => !empty($v['external_variant_id']))
+            ->keyBy('external_variant_id');
 
-        foreach ($storedVariants as $index => $storedVariant) {
+        foreach ($data->variants as $incomingVariant) {
+            $variantId = $incomingVariant instanceof VariantData
+                ? $incomingVariant->externalVariantId
+                : ($incomingVariant['external_variant_id'] ?? null);
 
-            $inventoryItemId =
-                $storedVariant['external_inventory_item_id'] ?? null;
-
-            if (!$inventoryItemId) {
-                continue;
-            }
-
-            if (!isset($data->variants[$index])) {
-                continue;
-            }
-
-            $incomingVariant = $data->variants[$index];
-
-            $newStock = $incomingVariant instanceof \App\Domain\Products\DTOs\VariantData
+            $newStock = $incomingVariant instanceof VariantData
                 ? $incomingVariant->stock
                 : ($incomingVariant['stock'] ?? null);
 
-            if ($newStock === null) {
+            if (!$variantId || $newStock === null) {
+                continue;
+            }
+
+            $stored = $storedByVariantId->get((string) $variantId);
+
+            if (!$stored) {
+                Log::warning('syncInventory: no stored variant found for external_variant_id', [
+                    'external_variant_id' => $variantId,
+                    'product_id'          => $product->id,
+                ]);
+                continue;
+            }
+
+            $inventoryItemId = $stored['external_inventory_item_id'] ?? null;
+
+            if (!$inventoryItemId) {
+                Log::warning('syncInventory: missing external_inventory_item_id', [
+                    'external_variant_id' => $variantId,
+                    'product_id'          => $product->id,
+                ]);
                 continue;
             }
 
             Log::info('INVENTORY_SYNC', [
-                'product_id' => $product->id,
-                'inventory_item_id' => $inventoryItemId,
-                'location_id' => $locationId,
-                'stock' => $newStock,
+                'product_id'          => $product->id,
+                'inventory_item_id'   => $inventoryItemId,
+                'location_id'         => $locationId,
+                'stock'               => $newStock,
             ]);
 
             $this->shopifyClient->setInventoryLevel(
@@ -101,19 +107,15 @@ final class UpdateProductHandler
     }
 
 
-    // handleShopifyProduct — fix the call (was passing wrong args, no Shop):
     private function handleShopifyProduct(Product $product, UpdateProductCommand $command): Product
     {
         if (empty($product->external_product_id)) {
             return $this->repository->update($product, $command->data);
         }
 
-        $shop = $product->shop; // BelongsTo already defined on Product
+        $shop = $product->shop;
 
-        $payload = $this->buildShopifyPayload(
-            $command->data,
-            $product
-        );
+        $payload = $this->buildShopifyPayload($command->data, $product);
 
         $this->shopifyClient->updateProduct(
             $shop,
@@ -121,11 +123,18 @@ final class UpdateProductHandler
             $payload
         );
 
-        $updated = $this->repository->update($product, $command->data);
+        // Inventory sync is best-effort — missing scope or transient Shopify error
+        // must not roll back a successful product update
+        try {
+            $this->syncInventory($product, $command->data);
+        } catch (\App\Domain\Shopify\Exceptions\ShopifyApiException $e) {
+            Log::error('Inventory sync failed — product update succeeded', [
+                'product_id' => $product->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
 
-        $this->syncInventory($updated, $command->data);
-
-        return $updated;
+        return $this->repository->update($product, $command->data);
     }
 
 
