@@ -37,7 +37,14 @@ use App\Infrastructure\Shopify\NullShopifyProductClient;
 
 use App\Domain\Products\Contracts\ProductRepositoryInterface;
 use App\Infrastructure\Products\Repositories\EloquentProductRepository;
+use App\Infrastructure\WhatsApp\TwilioWhatsAppDriver;
+use App\Infrastructure\WhatsApp\WhatsAppServiceInterface;
 
+use App\Domain\Orders\Repositories\OrderStatusRepositoryInterface;
+use App\Infrastructure\Orders\Repositories\EloquentOrderStatusRepository;
+
+use App\Domain\Teams\TeamRepositoryInterface;
+use App\Infrastructure\Teams\EloquentTeamRepository;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -59,14 +66,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ShopifyWebhookProcessorInterface::class, ShopifyWebhookHandler::class);
         $this->app->bind(ProductRepositoryInterface::class, EloquentProductRepository::class);
         $this->app->bind(ShopifyProductClientInterface::class, NullShopifyProductClient::class);
-        $this->app->bind(
-            \App\Application\Shopify\SyncShopOrders\SyncShopOrdersHandler::class,
-            fn($app) => new \App\Application\Shopify\SyncShopOrders\SyncShopOrdersHandler(
-                $app->make(\App\Application\Shopify\Contracts\ShopRepositoryInterface::class),
-                $app->make(\App\Application\Shopify\Contracts\ShopifyClientInterface::class),
-                $app->make(\App\Infrastructure\Shopify\Webhooks\OrderWebhookHandler::class),
-            )
-        );
+        $this->app->bind(WhatsAppServiceInterface::class,TwilioWhatsAppDriver::class);
+        $this->app->bind(TeamRepositoryInterface::class, EloquentTeamRepository::class);
+        $this->app->bind(OrderStatusRepositoryInterface::class, EloquentOrderStatusRepository::class);
     }
 
     /**
