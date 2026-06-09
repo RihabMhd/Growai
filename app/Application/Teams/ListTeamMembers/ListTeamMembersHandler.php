@@ -15,13 +15,13 @@ class ListTeamMembersHandler
     {
         $team    = $this->teams->getOrCreateDefault();
         $members = User::where('team_id', $team->id)
-            ->with('products')
-            ->withCount([
-                'orders as confirmed_orders_count' => fn($q) => $q->where('status', 'confirme'),
-                'orders as delivered_orders_count'  => fn($q) => $q->where('status', 'livre'),
-            ])
-            ->get()
-            ->map(fn($u) => TeamMember::fromUser($u));
+               ->with('products')
+               ->withCount([
+                   'orders as confirmed_orders_count' => fn($q) => $q->where('status', 'confirme'),
+                   'orders as delivered_orders_count'  => fn($q) => $q->where('status', 'livre'),
+               ])
+               ->get()
+               ->map(fn($u) => TeamMember::fromUser($u));
 
         return [
             'team'     => $team,

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Application\Teams\UpdateMember;
 
 use App\Domain\Teams\Models\{User, MemberRole, TeamMember};
