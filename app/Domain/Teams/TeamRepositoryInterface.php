@@ -1,9 +1,12 @@
-<?php 
+<?php
+
 namespace App\Domain\Teams;
+
+use App\Domain\Teams\Models\Team;
 
 interface TeamRepositoryInterface
 {
-    public function first(): ?object;
-    public function firstOrCreate(): object;
-    public function save(object $team): void;
+    public function first(): ?Team;
+    public function getOrCreateDefault(): Team;
+    public function save(Team $team): void;
 }

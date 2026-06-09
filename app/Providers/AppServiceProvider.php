@@ -10,7 +10,6 @@ use App\Domain\Orders\Models\Order;
 // Repository contracts
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\ShipmentRepositoryInterface;
-use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderSourceRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\UserRepositoryInterface;
 
@@ -18,7 +17,6 @@ use App\Infrastructure\Orders\Repositories\UserRepositoryInterface;
 use App\Infrastructure\Orders\Services\EloquentOrderAuditLogger;
 use App\Infrastructure\Orders\Repositories\EloquentOrderRepository;
 use App\Infrastructure\Orders\Repositories\EloquentShipmentRepository;
-use App\Infrastructure\Orders\Repositories\EloquentClientRepository;
 use App\Infrastructure\Orders\Repositories\EloquentOrderSourceRepository;
 use App\Infrastructure\Orders\Repositories\EloquentUserRepository;
 
@@ -45,6 +43,7 @@ use App\Infrastructure\Orders\Repositories\EloquentOrderStatusRepository;
 
 use App\Domain\Teams\TeamRepositoryInterface;
 use App\Infrastructure\Teams\EloquentTeamRepository;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -57,7 +56,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OrderAuditLogger::class, EloquentOrderAuditLogger::class);
         $this->app->bind(OrderRepositoryInterface::class,       EloquentOrderRepository::class);
         $this->app->bind(ShipmentRepositoryInterface::class,    EloquentShipmentRepository::class);
-        $this->app->bind(ClientRepositoryInterface::class,      EloquentClientRepository::class);
+        $this->app->bind(
+            \App\Domain\Orders\Repositories\ClientRepositoryInterface::class,
+            \App\Infrastructure\Orders\Repositories\EloquentClientRepository::class,
+        );
         $this->app->bind(OrderSourceRepositoryInterface::class, EloquentOrderSourceRepository::class);
         $this->app->bind(UserRepositoryInterface::class,        EloquentUserRepository::class);
         $this->app->bind(ShopRepositoryInterface::class, EloquentShopRepository::class);
@@ -66,9 +68,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ShopifyWebhookProcessorInterface::class, ShopifyWebhookHandler::class);
         $this->app->bind(ProductRepositoryInterface::class, EloquentProductRepository::class);
         $this->app->bind(ShopifyProductClientInterface::class, NullShopifyProductClient::class);
-        $this->app->bind(WhatsAppServiceInterface::class,TwilioWhatsAppDriver::class);
-        $this->app->bind(TeamRepositoryInterface::class, EloquentTeamRepository::class);
+        $this->app->bind(WhatsAppServiceInterface::class, TwilioWhatsAppDriver::class);
         $this->app->bind(OrderStatusRepositoryInterface::class, EloquentOrderStatusRepository::class);
+        $this->app->bind(
+            \App\Domain\Teams\TeamRepositoryInterface::class,
+            \App\Infrastructure\Team\EloquentTeamRepository::class,
+        );
+        $this->app->bind(
+            \App\Infrastructure\Mail\TeamInvitationMailerInterface::class,
+            \App\Infrastructure\Mail\LaravelTeamInvitationMailer::class,
+        );
     }
 
     /**

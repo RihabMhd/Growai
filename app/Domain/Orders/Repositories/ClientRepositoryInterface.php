@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Infrastructure\Orders\Repositories;
+namespace App\Domain\Orders\Repositories;
 
 use App\Domain\Clients\Models\Client;
 

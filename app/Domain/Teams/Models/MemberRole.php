@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Teams;
+namespace App\Domain\Teams\Models;
 
 enum MemberRole: string
 {

@@ -10,7 +10,8 @@ use Illuminate\Notifications\Notifiable;
 use App\Domain\Products\Models\Product;
 use App\Domain\Orders\Models\OrderHistory;
 use App\Domain\WhatsApp\Models\Message;
-use App\Domain\Teams\MemberRole;
+use App\Domain\Teams\Models\Team;
+use App\Domain\Teams\Models\MemberRole;
 
 class User extends Authenticatable
 {

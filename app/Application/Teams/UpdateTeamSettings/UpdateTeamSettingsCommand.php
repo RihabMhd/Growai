@@ -1,11 +1,8 @@
 <?php 
-namespace App\Application\Teams\UpdateTeamSettings;
 
-use App\Domain\Teams\WhatsAppLanguage;
+namespace App\Application\Teams\UpdateTeamSettings;
 
 final class UpdateTeamSettingsCommand
 {
-    public function __construct(
-        public readonly WhatsAppLanguage $language,
-    ) {}
+    public function __construct(public readonly string $whatsappLanguage) {}
 }

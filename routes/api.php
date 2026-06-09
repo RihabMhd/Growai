@@ -17,12 +17,12 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeliveryCompanyController;
 use App\Http\Controllers\Api\OrderStatusController;
 use App\Http\Controllers\Api\ShipmentController;
-use App\Http\Controllers\Api\ShopController;
-use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\Team\TeamController;
 use App\Http\Controllers\Api\UploadController;
 
 use App\Http\Controllers\Api\Products\ProductController;
 use App\Http\Controllers\Api\Shops\ShopSessionController;
+use App\Http\Middleware\AdminOnly;
 
 /*
 |--------------------------------------------------------------------------
@@ -147,7 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('products/summary',      [ProductController::class, 'summary']);
         Route::post('products/bulk-delete',  [ProductController::class, 'bulkDestroy']);
         Route::post('products/bulk-status',  [ProductController::class, 'bulkUpdateStatus']);
-        Route::post('sync-orders',[ShopifyController::class, 'syncOrders']);
+        Route::post('sync-orders', [ShopifyController::class, 'syncOrders']);
         // Standard CRUD
         Route::apiResource('products', ProductController::class);
     });
@@ -176,13 +176,16 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('team')->group(function () {
-        Route::get('/',                    [TeamController::class, 'index']);
-        Route::post('/members',             [TeamController::class, 'storeMember']);
-        Route::put('/members/{id}',        [TeamController::class, 'updateMember']);
-        Route::delete('/members/{id}',        [TeamController::class, 'destroyMember']);
-        Route::get('/settings',            [TeamController::class, 'settings']);
-        Route::post('/settings',            [TeamController::class, 'updateSettings']);
-        Route::post('/impersonate/{id}',    [TeamController::class, 'impersonate']);
+        Route::get('/settings',         [TeamController::class, 'settings']);
+
+        Route::middleware(AdminOnly::class)->group(function () {
+            Route::get('/',                  [TeamController::class, 'index']);
+            Route::post('/members',          [TeamController::class, 'storeMember']);
+            Route::put('/members/{id}',      [TeamController::class, 'updateMember']);
+            Route::delete('/members/{id}',   [TeamController::class, 'destroyMember']);
+            Route::post('/settings',         [TeamController::class, 'updateSettings']);
+            Route::post('/impersonate/{id}', [TeamController::class, 'impersonate']);
+        });
     });
 
     /*

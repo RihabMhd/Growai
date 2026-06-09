@@ -1,27 +1,29 @@
 <?php
-namespace App\Infrastructure\Teams;
+
+namespace App\Infrastructure\Team;
 
 use App\Domain\Teams\TeamRepositoryInterface;
 use App\Domain\Teams\Models\Team;
+use App\Domain\Teams\Models\User;
 
 class EloquentTeamRepository implements TeamRepositoryInterface
 {
-    public function first(): ?Team
-    {
-        return Team::first();
-    }
-
-    public function firstOrCreate(): Team
+    public function getOrCreateDefault(): Team
     {
         return Team::firstOrCreate([], [
-            'dispatch_auto'       => false,
-            'inactive_strategy'   => 'do_nothing',
+            'dispatch_auto'      => false,
+            'inactive_strategy'  => 'do_nothing',
             'commission_currency' => 'DZ DA',
         ]);
     }
 
-    public function save(object $team): void
+    public function save(Team $team): void
     {
         $team->save();
+    }
+
+    public function first(): ?Team
+    {
+        return Team::first();
     }
 }
