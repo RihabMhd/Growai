@@ -7,7 +7,8 @@ use App\Domain\Orders\Actions\ProductPriceResolver;
 use App\Domain\Orders\Events\OrderCreated;
 use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Models\OrderItem;
-use App\Domain\Orders\Services\AutoDispatchService;
+use App\Application\Dispatch\DispatchOrder\DispatchOrderCommand;
+use App\Application\Dispatch\DispatchOrder\DispatchOrderHandler;
 use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Shopify\Models\Shop;
 use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
@@ -27,19 +28,19 @@ class CreateOrderHandler
         private readonly OrderAuditLogger               $auditLogger,
         private readonly OrderNumberGenerator           $numberGenerator,
         private readonly ProductPriceResolver           $priceResolver,
-        private readonly AutoDispatchService            $autoDispatch,
+        private readonly DispatchOrderHandler           $dispatcher,   // ← replaces $autoDispatch
     ) {}
 
     public function handle(CreateOrderCommand $command): Order
     {
         // 1. Upsert client — outside transaction (read-heavy, idempotent)
         $client = $this->clients->upsertByPhone(
-            phone:    $command->customerPhone,
-            name:     $command->customerName,
-            email:    $command->customerEmail,
-            city:     $command->city,
+            phone: $command->customerPhone,
+            name: $command->customerName,
+            email: $command->customerEmail,
+            city: $command->city,
             province: $command->province,
-            street:   $command->street,
+            street: $command->street,
         );
 
         // 2. Resolve shop and order number before opening transaction
@@ -113,11 +114,11 @@ class CreateOrderHandler
 
             // 3f. Audit log — creation entry
             $this->auditLogger->log(
-                order:       $order,
-                userId:      $command->createdByUserId,
-                actionType:  'status_changed',
-                oldValue:    null,
-                newValue:    'pending',
+                order: $order,
+                userId: $command->createdByUserId,
+                actionType: 'status_changed',
+                oldValue: null,
+                newValue: 'pending',
                 description: 'Commande créée manuellement.',
             );
 
@@ -125,15 +126,19 @@ class CreateOrderHandler
         });
 
         // 4. Auto-dispatch (outside transaction — failure must not roll back the order)
-        $agent = $this->autoDispatch->dispatch($order);
+
+        $agent = $this->dispatcher->handle(new DispatchOrderCommand($order->id));
 
         if ($agent) {
+            $order->assigned_to = $agent->id;
+            $order->save();
+
             $this->auditLogger->log(
-                order:       $order,
-                userId:      $agent->id,
-                actionType:  'assigned',
-                oldValue:    'unassigned',
-                newValue:    $agent->name,
+                order: $order,
+                userId: $agent->id,
+                actionType: 'assigned',
+                oldValue: 'unassigned',
+                newValue: $agent->name,
                 description: "Commande assignée automatiquement à l'agent {$agent->name} (Auto-Dispatch Round-Robin).",
             );
         }

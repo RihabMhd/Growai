@@ -78,6 +78,20 @@ class AppServiceProvider extends ServiceProvider
             \App\Infrastructure\Mail\TeamInvitationMailerInterface::class,
             \App\Infrastructure\Mail\LaravelTeamInvitationMailer::class,
         );
+        $this->app->bind(
+            \App\Domain\Dispatch\Services\DispatchEngine::class,
+            fn($app) => new \App\Domain\Dispatch\Services\DispatchEngine(
+                new \App\Domain\Dispatch\Services\ProductMatcher(),
+                new \App\Domain\Dispatch\Services\QuotaRoundRobin(),
+            )
+        );
+
+        $this->app->bind(
+            \App\Application\Dispatch\DispatchOrder\DispatchOrderHandler::class,
+            fn($app) => new \App\Application\Dispatch\DispatchOrder\DispatchOrderHandler(
+                $app->make(\App\Domain\Dispatch\Services\DispatchEngine::class)
+            )
+        );
     }
 
     /**
