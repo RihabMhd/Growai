@@ -12,6 +12,7 @@ use App\Domain\Orders\Models\OrderHistory;
 use App\Domain\WhatsApp\Models\Message;
 use App\Domain\Teams\Models\Team;
 use App\Domain\Teams\Models\MemberRole;
+use App\Domain\Orders\Models\Order;
 
 class User extends Authenticatable
 {
@@ -114,5 +115,10 @@ class User extends Authenticatable
     public function messages()
     {
         return $this->hasMany(Message::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'assigned_to');
     }
 }

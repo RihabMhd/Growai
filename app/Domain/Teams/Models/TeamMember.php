@@ -20,6 +20,9 @@ final class TeamMember
         public readonly ?string $avatarUrl,
         public readonly ?string $whatsapp,
         public readonly array   $products,
+        public readonly float   $walletBalance,
+        public readonly int $confirmedOrdersCount,
+        public readonly int $deliveredOrdersCount,
     ) {}
 
     public static function fromUser(\App\Domain\Teams\Models\User $user): self
@@ -28,7 +31,7 @@ final class TeamMember
             id: $user->id,
             name: $user->name,
             email: $user->email,
-            role: $user->role->value,         
+            role: $user->role->value,
             roleDisplay: $user->role->displayName(),
             isActive: $user->is_active,
             isDispatchActive: $user->is_dispatch_active,
@@ -42,6 +45,9 @@ final class TeamMember
             products: $user->relationLoaded('products')
                 ? $user->products->toArray()
                 : [],
+            walletBalance: $user->wallet_balance ?? 0.0,
+            confirmedOrdersCount: $user->confirmed_orders_count ?? 0,
+            deliveredOrdersCount: $user->delivered_orders_count ?? 0,
         );
     }
 }

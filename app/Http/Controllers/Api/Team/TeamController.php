@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Http\Controllers\Api\Team;
 
 use App\Http\Controllers\Controller;
@@ -21,8 +22,7 @@ class TeamController extends Controller
         private DeleteMemberHandler       $deleteHandler,
         private ImpersonateMemberHandler  $impersonateHandler,
         private UpdateTeamSettingsHandler $settingsHandler,
-    ) {
-    }
+    ) {}
 
     public function index(): JsonResponse
     {
@@ -32,8 +32,8 @@ class TeamController extends Controller
     public function storeMember(InviteMemberRequest $request): JsonResponse
     {
         $result = $this->inviteHandler->handle(new InviteMemberCommand(
-            email:  $request->email,
-            role:   $request->role,
+            email: $request->email,
+            role: $request->role,
             avatar: $request->avatar,
         ));
 
@@ -47,17 +47,17 @@ class TeamController extends Controller
     public function updateMember(UpdateMemberRequest $request, int $id): JsonResponse
     {
         $member = $this->updateHandler->handle(new UpdateMemberCommand(
-            userId:            $id,
-            name:              $request->name,
-            role:              $request->role,
-            isActive:          $request->is_active,
-            quota:             $request->quota,
-            isDispatchActive:  $request->is_dispatch_active,
+            userId: $id,
+            name: $request->name,
+            role: $request->role,
+            isActive: $request->is_active,
+            quota: $request->quota,
+            isDispatchActive: $request->is_dispatch_active,
             commissionTrigger: $request->commission_trigger,
-            commissionAmount:  $request->commission_amount,
-            commissionType:    $request->commission_type,
-            avatar:            $request->avatar,
-            productIds:        $request->product_ids,
+            commissionAmount: $request->commission_amount,
+            commissionType: $request->commission_type,
+            avatar: $request->avatar,
+            productIds: $request->product_ids,
         ));
 
         return response()->json(['message' => 'Membre mis à jour.', 'member' => $member]);
@@ -89,11 +89,21 @@ class TeamController extends Controller
     public function updateSettings(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'whatsapp_language' => ['required', 'string', 'in:FR,AR,FR/AR,Darija AR,Darija FR'],
+            'whatsapp_language'   => ['nullable', 'string', 'in:FR,AR,FR/AR,Darija AR,Darija FR'],
+            'dispatch_auto'       => ['nullable', 'boolean'],
+            'inactive_strategy'   => ['nullable', 'string', 'in:do_nothing,reassign,deactivate'],
+            'commission_currency' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $this->settingsHandler->handle(new UpdateTeamSettingsCommand($validated['whatsapp_language']));
+        $this->settingsHandler->handle(new UpdateTeamSettingsCommand(
+            whatsappLanguage: $validated['whatsapp_language']   ?? null,
+            dispatchAuto: $validated['dispatch_auto']       ?? null,
+            inactiveStrategy: $validated['inactive_strategy']   ?? null,
+            commissionCurrency: $validated['commission_currency'] ?? null,
+        ));
 
-        return response()->json(['success' => true, 'whatsapp_language' => $validated['whatsapp_language']]);
+        $team = app(\App\Domain\Teams\TeamRepositoryInterface::class)->getOrCreateDefault();
+
+        return response()->json(['success' => true, 'team' => $team]);
     }
 }
