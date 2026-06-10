@@ -53,7 +53,6 @@ class AppServiceProvider extends ServiceProvider
     {
         //
         $this->app->bind(OrderAuditLogger::class, EloquentOrderAuditLogger::class);
-        $this->app->bind(OrderAuditLogger::class, EloquentOrderAuditLogger::class);
         $this->app->bind(OrderRepositoryInterface::class,       EloquentOrderRepository::class);
         $this->app->bind(ShipmentRepositoryInterface::class,    EloquentShipmentRepository::class);
         $this->app->bind(
@@ -92,6 +91,14 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(\App\Domain\Dispatch\Services\DispatchEngine::class)
             )
         );
+
+        $this->app->bind(
+            \App\Application\Commissions\GenerateCommission\GenerateCommissionHandler::class,
+            fn($app) => new \App\Application\Commissions\GenerateCommission\GenerateCommissionHandler(
+                new \App\Domain\Commissions\Services\CommissionCalculator()
+            )
+        );
+
     }
 
     /**

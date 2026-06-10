@@ -3,7 +3,7 @@
 namespace App\Application\Orders\ListOrders;
 
 use App\Domain\Orders\Actions\OrderMetricsCalculator;
-use App\Domain\Orders\Models\Order;
+use App\Domain\Orders\Services\OrderVisibilityResolver;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\UserRepositoryInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +14,7 @@ class ListOrdersHandler
         private readonly OrderRepositoryInterface  $orders,
         private readonly UserRepositoryInterface   $users,
         private readonly OrderMetricsCalculator    $metricsCalculator,
+        private readonly OrderVisibilityResolver   $visibilityResolver,
     ) {}
 
     /**
@@ -42,32 +43,12 @@ class ListOrdersHandler
     {
         $builder = $this->orders->baseQuery();
 
-        $this->applyVisibility($builder, $query);
+        $this->visibilityResolver->apply($builder, $query->actor);
         $this->applySearch($builder, $query);
         $this->applyTypeFilter($builder, $query);
         $this->applyStatusFilter($builder, $query);
 
         return $builder;
-    }
-
-    /**
-     * Staff agents only see orders that contain one of their assigned products.
-     */
-    private function applyVisibility(Builder $builder, ListOrdersQuery $query): void
-    {
-        if ($query->actor->role !== 'staff') {
-            return;
-        }
-
-        $assignedProductIds = $query->actor->products()->pluck('products.id')->toArray();
-
-        if (empty($assignedProductIds)) {
-            return;
-        }
-
-        $builder->whereHas('items', function (Builder $q) use ($assignedProductIds) {
-            $q->whereIn('product_id', $assignedProductIds);
-        });
     }
 
     private function applySearch(Builder $builder, ListOrdersQuery $query): void

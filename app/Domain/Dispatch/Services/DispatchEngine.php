@@ -16,7 +16,6 @@ final class DispatchEngine
     {
         $orderProductIds = $order->items()->pluck('product_id')->filter()->toArray();
 
-        // Load all candidate agents with their product relationships
         $agents = User::where('role', 'staff')
             ->where('is_active', true)
             ->where('is_dispatch_active', true)
@@ -34,13 +33,6 @@ final class DispatchEngine
             return null;
         }
 
-        // Fetch current assignment counts for eligible agents only
-        $agentOrderCounts = Order::whereIn('assigned_to', $eligible->pluck('id'))
-            ->selectRaw('assigned_to, count(*) as count')
-            ->groupBy('assigned_to')
-            ->pluck('count', 'assigned_to')
-            ->toArray();
-
-        return $this->quotaRoundRobin->select($eligible, $agentOrderCounts);
+        return $this->quotaRoundRobin->select($eligible);
     }
 }

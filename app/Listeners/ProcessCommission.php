@@ -2,21 +2,19 @@
 
 namespace App\Listeners;
 
+use App\Application\Commissions\GenerateCommission\GenerateCommissionCommand;
+use App\Application\Commissions\GenerateCommission\GenerateCommissionHandler;
+use App\Application\Commissions\ReverseCommission\ReverseCommissionCommand;
+use App\Application\Commissions\ReverseCommission\ReverseCommissionHandler;
 use App\Domain\Orders\Events\OrderStatusChanged;
-use App\Domain\Orders\Services\CommissionService;
 use App\Domain\Orders\Services\OrderAuditLogger;
 
-/**
- * Listens for OrderStatusChanged and processes agent commission if due.
- *
- * Registered in EventServiceProvider:
- *   OrderStatusChanged::class => [ProcessCommission::class]
- */
 class ProcessCommission
 {
     public function __construct(
-        private readonly CommissionService $commissionService,
-        private readonly OrderAuditLogger  $auditLogger,
+        private readonly GenerateCommissionHandler $generateHandler,
+        private readonly ReverseCommissionHandler  $reverseHandler,
+        private readonly OrderAuditLogger          $auditLogger,
     ) {}
 
     public function handle(OrderStatusChanged $event): void
@@ -24,7 +22,41 @@ class ProcessCommission
         $order     = $event->order;
         $newStatus = $event->newStatus;
 
-        $amount = $this->commissionService->processForOrder($order, $newStatus);
+        // Reversal on cancellation
+        if ($newStatus === 'annule') {
+            $reversed = $this->reverseHandler->handle(
+                new ReverseCommissionCommand($order->id)
+            );
+
+            if ($reversed > 0.00) {
+                $currency = $order->currency ?? 'MAD';
+                $agent    = $order->assignedAgent;
+
+                $this->auditLogger->log(
+                    order:       $order,
+                    userId:      $agent?->id,
+                    actionType:  'commission',
+                    oldValue:    (string) $reversed,
+                    newValue:    '0',
+                    description: sprintf(
+                        "Commission de %s %s annulée suite à l'annulation de la commande. Agent: %s.",
+                        number_format($reversed, 2, '.', ''),
+                        $currency,
+                        $agent?->name ?? 'inconnu',
+                    ),
+                );
+            }
+
+            return;
+        }
+
+        // Generation on trigger status
+        $amount = $this->generateHandler->handle(
+            new GenerateCommissionCommand(
+                orderId:   $order->id,
+                newStatus: $newStatus,
+            )
+        );
 
         if ($amount > 0.00) {
             $currency = $order->currency ?? 'MAD';

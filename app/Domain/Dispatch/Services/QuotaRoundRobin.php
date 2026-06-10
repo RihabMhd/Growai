@@ -4,49 +4,118 @@ namespace App\Domain\Dispatch\Services;
 
 use App\Domain\Teams\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use App\Domain\Teams\Models\Team;
 
+/**
+ * Persistent quota-based round-robin using a single team-level cursor.
+ *
+ * Algorithm:
+ *   1. Sort eligible agents by id (stable, deterministic order).
+ *   2. Build the expanded slot sequence: [A,A,A,A,A,B,B,B,C,C]
+ *      sequence_length = sum of quotas.
+ *   3. position = cursor % sequence_length
+ *   4. Walk the sequence to find which agent owns `position`.
+ *   5. Increment cursor and persist.
+ *
+ * Quota/roster changes take effect on the next dispatch naturally:
+ * the sequence is rebuilt from live data each time. The cursor keeps
+ * incrementing; mod arithmetic absorbs the change without a hard reset.
+ */
 final class QuotaRoundRobin
 {
-    /**
-     * Select the best agent from eligible candidates.
-     *
-     * Prefers agents under quota. Among those, picks the one with the
-     * lowest assignment/quota ratio. Ties broken by absolute count (fewest wins).
-     *
-     * @param Collection $eligible        Collection of User models
-     * @param array      $agentOrderCounts ['agent_id' => count] map
-     */
-    public function select(Collection $eligible, array $agentOrderCounts): ?User
+    public function select(Collection $agents): ?User
     {
-        $underQuota = $eligible->filter(
-            fn ($agent) => ($agentOrderCounts[$agent->id] ?? 0) < $agent->quota
-        );
+        if ($agents->isEmpty()) {
+            return null;
+        }
 
-        $candidates = $underQuota->isNotEmpty() ? $underQuota : $eligible;
+        return DB::transaction(function () use ($agents) {
 
-        return $this->selectByLowestRatio($candidates, $agentOrderCounts);
+            $team = Team::query()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $sequence = $this->buildSequence($agents);
+
+            if (empty($sequence)) {
+                return null;
+            }
+
+            $hash = $this->generateHash($agents);
+
+            if ($team->dispatch_hash !== $hash) {
+
+                $team->dispatch_hash = $hash;
+
+                $team->save();
+            }
+
+            $index = $team->dispatch_cursor % count($sequence);
+
+            $selected = $sequence[$index];
+
+            $team->increment('dispatch_cursor');
+
+            return $selected;
+        });
     }
 
-    private function selectByLowestRatio(Collection $candidates, array $agentOrderCounts): ?User
+    private function buildSequence(Collection $agents): array
     {
-        $selectedAgent = null;
-        $lowestRatio   = null;
+        $sequence = [];
 
-        foreach ($candidates as $agent) {
-            $currentCount = $agentOrderCounts[$agent->id] ?? 0;
-            $ratio        = $currentCount / $agent->quota;
+        foreach ($agents->sortBy('id') as $agent) {
 
-            if ($selectedAgent === null || $ratio < $lowestRatio) {
-                $selectedAgent = $agent;
-                $lowestRatio   = $ratio;
-            } elseif ($ratio == $lowestRatio) {
-                $currentSelectedCount = $agentOrderCounts[$selectedAgent->id] ?? 0;
-                if ($currentCount < $currentSelectedCount) {
-                    $selectedAgent = $agent;
-                }
+            if ($agent->quota <= 0) {
+                continue;
+            }
+
+            for ($i = 0; $i < $agent->quota; $i++) {
+
+                $sequence[] = $agent;
             }
         }
 
-        return $selectedAgent;
+        return $sequence;
+    }
+
+    private function generateHash(Collection $agents): string
+    {
+        return md5(
+
+            $agents
+                ->sortBy('id')
+                ->map(
+
+                    fn($agent) => "{$agent->id}:{$agent->quota}"
+                )
+                ->implode('|')
+        );
+    }
+
+    // -------------------------------------------------------------------------
+
+    /**
+     * Walk the sorted agent list, consuming quota-sized slots, until
+     * the slot at $position is owned by an agent.
+     *
+     * Example: agents=[A(q=5), B(q=3), C(q=2)], position=6
+     *   offset=0: A owns slots 0-4, 6 >= 5 → offset=5
+     *   offset=5: B owns slots 5-7, 6 < 8  → return B
+     */
+    private function resolveAgent(Collection $sorted, int $position): ?User
+    {
+        $offset = 0;
+
+        foreach ($sorted as $agent) {
+            $offset += $agent->quota;
+            if ($position < $offset) {
+                return $agent;
+            }
+        }
+
+        // Unreachable if position < sequenceLength, but defensive fallback.
+        return $sorted->first();
     }
 }
