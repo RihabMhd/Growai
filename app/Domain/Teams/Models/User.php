@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Domain\Teams\Models;
+
 use Laravel\Sanctum\HasApiTokens;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +10,9 @@ use Illuminate\Notifications\Notifiable;
 use App\Domain\Products\Models\Product;
 use App\Domain\Orders\Models\OrderHistory;
 use App\Domain\WhatsApp\Models\Message;
-
+use App\Domain\Teams\Models\Team;
+use App\Domain\Teams\Models\MemberRole;
+use App\Domain\Orders\Models\Order;
 
 class User extends Authenticatable
 {
@@ -86,6 +89,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role'               => MemberRole::class,
             'is_dispatch_active' => 'boolean',
             'wallet_balance' => 'float',
             'is_active' => 'boolean',
@@ -111,5 +115,10 @@ class User extends Authenticatable
     public function messages()
     {
         return $this->hasMany(Message::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'assigned_to');
     }
 }

@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'admin'    => \App\Http\Middleware\AdminOnly::class,
         ]);
 
         $middleware->statefulApi();

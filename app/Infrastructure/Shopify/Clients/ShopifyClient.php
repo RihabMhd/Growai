@@ -50,13 +50,22 @@ final class ShopifyClient implements ShopifyClientInterface
 
     public function fetchOrders(Shop $shop): array
     {
-        $response = $this->request(
-            $shop,
-            'GET',
-            '/orders.json'
-        );
+        $allOrders = [];
+        $params    = ['limit' => 250, 'status' => 'any'];
 
-        return $response['orders'] ?? [];
+        do {
+            $response  = $this->request($shop, 'GET', '/orders.json', $params);
+            $orders    = $response['orders'] ?? [];
+            $allOrders = array_merge($allOrders, $orders);
+
+            $hasMore = count($orders) === 250;
+
+            if ($hasMore && !empty($orders)) {
+                $params['since_id'] = end($orders)['id'];
+            }
+        } while ($hasMore);
+
+        return $allOrders;
     }
 
     public function fetchShop(Shop $shop): array
@@ -140,7 +149,6 @@ final class ShopifyClient implements ShopifyClientInterface
                 'body' => $response->body(),
                 'url' => $url,
             ]);
-
             throw new ShopifyApiException(
                 $response->body()
             );
