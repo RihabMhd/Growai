@@ -57,7 +57,7 @@ final class ShopifyClient implements ShopifyClientInterface
             $response  = $this->request($shop, 'GET', '/orders.json', $params);
             $orders    = $response['orders'] ?? [];
             $allOrders = array_merge($allOrders, $orders);
-            
+
             $hasMore = count($orders) === 250;
 
             if ($hasMore && !empty($orders)) {
@@ -149,7 +149,6 @@ final class ShopifyClient implements ShopifyClientInterface
                 'body' => $response->body(),
                 'url' => $url,
             ]);
-
             throw new ShopifyApiException(
                 $response->body()
             );
