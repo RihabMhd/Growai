@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Orders\Repositories;
 
 use App\Domain\Clients\Models\Client;
+use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 
 class EloquentClientRepository implements ClientRepositoryInterface
 {

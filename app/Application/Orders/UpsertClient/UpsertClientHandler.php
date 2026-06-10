@@ -3,7 +3,7 @@
 namespace App\Application\Orders\UpsertClient;
 
 use App\Domain\Clients\Models\Client;
-use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
+use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 
 final readonly class UpsertClientHandler
 {

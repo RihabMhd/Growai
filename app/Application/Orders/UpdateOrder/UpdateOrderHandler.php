@@ -6,7 +6,7 @@ use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Orders\Services\OrderItemsReplacer;
 use App\Domain\Orders\States\OrderStateMachine;
-use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
+use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\ShipmentRepositoryInterface;
 use Illuminate\Support\Facades\DB;
