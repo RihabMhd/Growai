@@ -29,6 +29,8 @@ return new class extends Migration
 
             $table->timestamps();
 
+            $table->index(['order_id', 'new_value'], 'idx_order_histories_order_status');
+
             $table->index('action_type');
         });
     }

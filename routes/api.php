@@ -12,18 +12,18 @@ use App\Http\Controllers\Api\Shopify\ShopifyAuthController;
 use App\Http\Controllers\Api\Shopify\ShopifyController;
 use App\Http\Controllers\Api\Shopify\ShopifyWebhookController;
 
-use App\Http\Controllers\Api\ClientController;
-use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\DeliveryCompanyController;
-use App\Http\Controllers\Api\OrderStatusController;
-use App\Http\Controllers\Api\ShipmentController;
+use App\Http\Controllers\Api\Client\ClientController;
+use App\Http\Controllers\Api\Dashboard\DashboardController;
+use App\Http\Controllers\Api\Delivery\DeliveryCompanyController;
+use App\Http\Controllers\Api\Order\OrderStatusController;
+use App\Http\Controllers\Api\Delivery\ShipmentController;
 use App\Http\Controllers\Api\Team\TeamController;
 use App\Http\Controllers\Api\UploadController;
 
 use App\Http\Controllers\Api\Products\ProductController;
 use App\Http\Controllers\Api\Shops\ShopSessionController;
 use App\Http\Middleware\AdminOnly;
-
+use Illuminate\Support\Facades\Auth;
 /*
 |--------------------------------------------------------------------------
 | Public — Authentication

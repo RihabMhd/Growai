@@ -121,4 +121,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class, 'assigned_to');
     }
+
+    public function isAgent(): bool
+    {
+        return $this->role === MemberRole::Staff;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === MemberRole::Admin;
+    }
 }
