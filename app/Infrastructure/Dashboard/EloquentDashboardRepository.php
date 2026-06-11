@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 namespace App\Infrastructure\Dashboard;
 
 use App\Domain\Dashboard\Contracts\DashboardRepositoryInterface;
@@ -13,22 +14,23 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentDashboardRepository implements DashboardRepositoryInterface
 {
-    public function getOrderStats(DateRange $range, DashboardVisibilityPolicy $policy, ?int $shopId = null): array
+    public function getOrderStats(DateRange $range, DashboardVisibilityPolicy $policy, ?int $shopId = null, ?int $teamId = null): array
     {
         $base = Order::whereBetween('created_at', [$range->start, $range->end])
-            ->when($shopId, fn($q) => $q->where('shop_id', $shopId))
+            ->when($shopId,  fn($q) => $q->where('shop_id', $shopId))
+            ->when($teamId,  fn($q) => $q->whereHas('shop', fn($s) => $s->where('team_id', $teamId)))
             ->when($policy->isRestricted(), fn($q) => $q->where('assigned_to', $policy->restrictedToUserId()));
 
         // Single aggregate query instead of 6 clones
-        $counts = (clone $base)
+        $counts = $base->clone()
             ->selectRaw("
-                COUNT(*) as total,
-                SUM(status = 'confirmed') as confirmed,
-                SUM(status IN ('pending','new')) as pending,
-                SUM(status IN ('cancelled','annulled')) as cancelled,
-                SUM(status = 'delivered') as delivered,
-                SUM(CASE WHEN status IN ('confirmed','delivered') THEN total_price ELSE 0 END) as revenue
-            ")
+                    COUNT(*) as total,
+                    SUM(status = 'confirmed') as confirmed,
+                    SUM(status IN ('pending','new')) as pending,
+                    SUM(status IN ('cancelled','annulled')) as cancelled,
+                    SUM(status = 'delivered') as delivered,
+                    SUM(CASE WHEN status IN ('confirmed','delivered') THEN total_price ELSE 0 END) as revenue
+                ")
             ->first();
 
         $prevRevenue = Order::whereBetween('created_at', [$range->prevStart, $range->prevEnd])
@@ -66,16 +68,20 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
         ];
     }
 
-    public function getShops(): \Illuminate\Support\Collection
+    public function getShops(?int $teamId = null): \Illuminate\Support\Collection
     {
-        return Shop::orderBy('name')->get();
+        return Shop::when($teamId, fn($q) => $q->where('team_id', $teamId))
+            ->orderBy('name')
+            ->get();
     }
 
     public function getProductCount(DashboardVisibilityPolicy $policy): int
     {
         return Product::when(
             $policy->isRestricted(),
-            fn($q) => $q->whereIn('id', fn($sub) =>
+            fn($q) => $q->whereIn(
+                'id',
+                fn($sub) =>
                 $sub->select('product_id')->from('product_user')->where('user_id', $policy->restrictedToUserId())
             )
         )->count();
