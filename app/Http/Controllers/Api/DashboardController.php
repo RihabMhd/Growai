@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Client;
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Shop;
-use App\Models\User;
+use App\Domain\Clients\Models\Client;
+use App\Domain\Orders\Models\Order;
+use App\Domain\Products\Models\Product;
+use App\Domain\Shopify\Models\Shop;
+use App\Domain\Teams\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
