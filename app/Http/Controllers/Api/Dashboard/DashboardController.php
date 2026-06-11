@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
-    public function __construct(private readonly GetDashboardHandler $handler) {}
+    public function __construct(
+        private readonly GetDashboardHandler $handler
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -29,6 +31,9 @@ class DashboardController extends Controller
             isAgent: $user->isAgent(),
         ));
 
-        return response()->json($result);
+        return response()->json([
+            ...$result,
+            'shops' => collect($result['shops'])->values(),
+        ]);
     }
 }
