@@ -6,6 +6,7 @@ use App\Domain\Dashboard\DashboardPeriodResolver;
 use App\Domain\Dashboard\DashboardVisibilityPolicy;
 use App\Domain\Dashboard\Contracts\DashboardRepositoryInterface;
 use Illuminate\Support\Facades\Log;
+
 final class GetDashboardHandler
 {
     public function __construct(
@@ -16,7 +17,11 @@ final class GetDashboardHandler
     public function handle(GetDashboardQuery $query): array
     {
 
-        $range  = $this->periodResolver->resolve($query->period);
+        $range = $this->periodResolver->resolve(
+            $query->period,
+            $query->from,
+            $query->to,
+        );
         $policy = new DashboardVisibilityPolicy($query->userId, $query->isAgent);
 
         $global = $this->repository->getOrderStats($range, $policy, shopId: null, teamId: $query->teamId);

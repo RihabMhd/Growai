@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Domain\Dashboard;
-
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 final class DashboardPeriodResolver
@@ -68,6 +68,13 @@ final class DashboardPeriodResolver
         $lengthSeconds = $start->diffInSeconds($end);
         $prevEnd       = $start->copy()->subSecond();
         $prevStart     = $prevEnd->copy()->subSeconds($lengthSeconds);
+
+
+        Log::debug('Dashboard range', [
+            'period' => $period,
+            'start' => $start,
+            'end' => $end,
+        ]);
 
         return new DateRange($start, $end, $prevStart, $prevEnd);
     }
