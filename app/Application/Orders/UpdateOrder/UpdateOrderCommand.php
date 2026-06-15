@@ -30,6 +30,8 @@ final class UpdateOrderCommand
 
         // Items (null = no change)
         public readonly ?array  $items,
+
+        public readonly array $providedFields = [],
     ) {}
 
     public static function fromArray(int|string $orderId, array $validated, int $actorId): self
@@ -43,13 +45,14 @@ final class UpdateOrderCommand
             shippingPrice:   isset($validated['shipping_price'])
                                 ? (float) $validated['shipping_price']
                                 : null,
-            customerName:    $validated['customer_name']  ?? null,
-            customerPhone:   $validated['customer_phone'] ?? null,
-            customerEmail:   $validated['customer_email'] ?? null,
-            province:        $validated['province']       ?? null,
-            city:            $validated['city']           ?? null,
-            street:          $validated['street']         ?? null,
-            items:           $validated['items']          ?? null,
+            customerName:    array_key_exists('customer_name', $validated) ? $validated['customer_name'] : null,
+            customerPhone:   array_key_exists('customer_phone', $validated) ? $validated['customer_phone'] : null,
+            customerEmail:   array_key_exists('customer_email', $validated) ? $validated['customer_email'] : null,
+            province:        array_key_exists('province', $validated) ? $validated['province'] : null,
+            city:            array_key_exists('city', $validated) ? $validated['city'] : null,
+            street:          array_key_exists('street', $validated) ? $validated['street'] : null,
+            items:           array_key_exists('items', $validated) ? $validated['items'] : null,
+            providedFields:  array_keys($validated),
         );
     }
 }

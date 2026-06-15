@@ -21,9 +21,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class OrderController extends Controller
 {
+    use AuthorizesRequests;
     public function __construct(
         private readonly ListOrdersHandler            $listOrders,
         private readonly CreateOrderHandler           $createOrder,
