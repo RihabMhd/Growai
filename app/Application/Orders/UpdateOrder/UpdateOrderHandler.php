@@ -96,14 +96,6 @@ class UpdateOrderHandler
                 $machine = new OrderStateMachine($order);
                 $machine->transitionTo($command->status);
                 
-                $this->auditLogger->log(
-                    order:       $order,
-                    userId:      $command->actorId,
-                    actionType:  'status',
-                    oldValue:    $order->status,
-                    newValue:    $command->status,
-                    description: "Statut modifié"
-                );
 
                 $orderFields['status'] = $command->status;
             }
