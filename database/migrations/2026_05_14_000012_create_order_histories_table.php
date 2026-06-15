@@ -24,7 +24,7 @@ return new class extends Migration
             // status_changed | assigned | note_added | payment_updated | ...
 
             $table->text('old_value')->nullable();
-            $table->text('new_value')->nullable();
+            $table->string('new_value', 100)->nullable();
             $table->text('description')->nullable();
 
             $table->timestamps();
