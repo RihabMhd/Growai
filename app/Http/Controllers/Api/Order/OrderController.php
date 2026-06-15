@@ -87,11 +87,13 @@ class OrderController extends Controller
     // GET /orders/{id}
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function show(int|string $id): JsonResponse
+    public function toArray(Request $request): array
     {
-        $order = $this->getOrder->handle($id);
+        return [
+            ...parent::toArray($request),
 
-        return response()->json(new OrderResource($order));
+            'histories' => $this->histories,
+        ];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -160,8 +162,8 @@ class OrderController extends Controller
 
         $count = $this->bulkAssignOrders->handle(new BulkAssignOrdersCommand(
             orderIds: $validated['order_ids'],
-            agentId:  $validated['agent_id'] ?? null,
-            actorId:  $request->user()->id,
+            agentId: $validated['agent_id'] ?? null,
+            actorId: $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);
@@ -182,9 +184,9 @@ class OrderController extends Controller
         ]);
 
         $count = $this->bulkUpdateStatus->handle(new BulkUpdateOrderStatusCommand(
-            orderIds:  $validated['order_ids'],
+            orderIds: $validated['order_ids'],
             newStatus: $validated['status'],
-            actorId:   $request->user()->id,
+            actorId: $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);
