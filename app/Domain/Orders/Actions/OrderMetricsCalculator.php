@@ -39,7 +39,9 @@ class OrderMetricsCalculator
         $total     = (clone $query)->count();
         $confirmed = (clone $query)->whereIn('status', self::CONFIRMED_STATUSES)->count();
         $cancelled = (clone $query)->whereIn('status', self::CANCELLED_STATUSES)->count();
-        $pending   = (clone $query)->where('status', 'pending')->count();
+        $pending = (clone $query)
+            ->whereIn('status', ['nouveau', 'pending'])
+            ->count();
 
         $rate = $total > 0 ? round(($confirmed / $total) * 100) : 0;
 

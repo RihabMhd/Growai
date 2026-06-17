@@ -64,6 +64,8 @@ class Order extends Model
 
     // Add to $casts
     protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
         'is_abandoned'     => 'boolean',
         'abandoned_at'     => 'datetime',
         'commission_paid'  => 'boolean',
@@ -117,5 +119,14 @@ class Order extends Model
     public function statusModel()
     {
         return $this->belongsTo(OrderStatus::class, 'status', 'slug');
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($order) {
+            if (empty($order->status)) {
+                $order->status = 'nouveau';
+            }
+        });
     }
 }
