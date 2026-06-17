@@ -31,7 +31,7 @@ class ListOrdersHandler
         return [
             'orders'        => (clone $baseQuery)->get(),
             'metrics'       => $this->metricsCalculator->calculate(clone $baseQuery),
-            'active_agents' => $query->actor->role === 'admin'
+            'active_agents' => $query->actor->isAdmin()
                                 ? $this->users->activeAgents()
                                 : [],
         ];

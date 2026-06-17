@@ -31,6 +31,12 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
+        logger()->info('ORDER UPDATED', [
+            'order_id' => $order->id,
+            'dirty' => $order->getDirty(),
+            'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10),
+        ]);
+
         if (! $order->isDirty('status')) {
             return;
         }

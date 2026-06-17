@@ -9,7 +9,7 @@ enum MemberRole: string
 
     public static function fromInput(string $input): self
     {
-        return match($input) {
+        return match ($input) {
             'admin'          => self::Admin,
             'agent', 'staff' => self::Staff,
             default          => throw new \InvalidArgumentException("Unknown role: {$input}"),
@@ -19,5 +19,14 @@ enum MemberRole: string
     public function displayName(): string
     {
         return $this === self::Staff ? 'agent' : 'admin';
+    }
+
+    public function isStaff(): bool
+    {
+        return $this === self::Staff;
+    }
+    public function isAdmin(): bool
+    {
+        return $this === self::Admin;
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Order;
 
 use App\Http\Controllers\Controller;
-use App\Models\OrderStatus;
+use App\Domain\Orders\Models\OrderStatus;
 use Illuminate\Http\Request;
 use App\Http\Requests\OrderStatusRequest;
 

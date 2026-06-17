@@ -57,6 +57,9 @@ class Order extends Model
         'customer_phone',         // ← new
         'shipping_address',       // ← new
         'order_date',             // ← new
+        'province',
+        'city',
+        'street',
     ];
 
     // Add to $casts

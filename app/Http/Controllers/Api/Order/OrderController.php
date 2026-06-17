@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers\Api\Order;
 
-use App\Application\Orders\UseCases\AssignOrder\AssignOrderCommand;
-use App\Application\Orders\UseCases\AssignOrder\AssignOrderHandler;
-use App\Application\Orders\UseCases\BulkAssignOrders\BulkAssignOrdersCommand;
-use App\Application\Orders\UseCases\BulkAssignOrders\BulkAssignOrdersHandler;
-use App\Application\Orders\UseCases\BulkUpdateOrderStatus\BulkUpdateOrderStatusCommand;
-use App\Application\Orders\UseCases\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler;
-use App\Application\Orders\UseCases\CreateOrder\CreateOrderCommand;
-use App\Application\Orders\UseCases\CreateOrder\CreateOrderHandler;
-use App\Application\Orders\UseCases\GetOrder\GetOrderHandler;
-use App\Application\Orders\UseCases\ListOrders\ListOrdersQuery;
-use App\Application\Orders\UseCases\ListOrders\ListOrdersHandler;
-use App\Application\Orders\UseCases\SyncAbandonedOrders\SyncAbandonedOrdersHandler;
-use App\Application\Orders\UseCases\UpdateOrder\UpdateOrderCommand;
-use App\Application\Orders\UseCases\UpdateOrder\UpdateOrderHandler;
+use App\Application\Orders\AssignOrder\AssignOrderCommand;
+use App\Application\Orders\AssignOrder\AssignOrderHandler;
+use App\Application\Orders\BulkAssignOrders\BulkAssignOrdersCommand;
+use App\Application\Orders\BulkAssignOrders\BulkAssignOrdersHandler;
+use App\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusCommand;
+use App\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler;
+use App\Application\Orders\CreateOrder\CreateOrderCommand;
+use App\Application\Orders\CreateOrder\CreateOrderHandler;
+use App\Application\Orders\GetOrder\GetOrderHandler;
+use App\Application\Orders\ListOrders\ListOrdersQuery;
+use App\Application\Orders\ListOrders\ListOrdersHandler;
+use App\Application\Orders\SyncAbandonedOrders\SyncAbandonedOrdersHandler;
+use App\Application\Orders\UpdateOrder\UpdateOrderCommand;
+use App\Application\Orders\UpdateOrder\UpdateOrderHandler;
 use App\Http\Resources\OrderResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class OrderController extends Controller
 {
+    use AuthorizesRequests;
     public function __construct(
         private readonly ListOrdersHandler            $listOrders,
         private readonly CreateOrderHandler           $createOrder,
@@ -85,11 +87,13 @@ class OrderController extends Controller
     // GET /orders/{id}
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function show(int|string $id): JsonResponse
+    public function toArray(Request $request): array
     {
-        $order = $this->getOrder->handle($id);
+        return [
+            ...parent::toArray($request),
 
-        return response()->json(new OrderResource($order));
+            'histories' => $this->histories,
+        ];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -158,8 +162,8 @@ class OrderController extends Controller
 
         $count = $this->bulkAssignOrders->handle(new BulkAssignOrdersCommand(
             orderIds: $validated['order_ids'],
-            agentId:  $validated['agent_id'] ?? null,
-            actorId:  $request->user()->id,
+            agentId: $validated['agent_id'] ?? null,
+            actorId: $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);
@@ -180,9 +184,9 @@ class OrderController extends Controller
         ]);
 
         $count = $this->bulkUpdateStatus->handle(new BulkUpdateOrderStatusCommand(
-            orderIds:  $validated['order_ids'],
+            orderIds: $validated['order_ids'],
             newStatus: $validated['status'],
-            actorId:   $request->user()->id,
+            actorId: $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);

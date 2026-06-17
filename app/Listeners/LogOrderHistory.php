@@ -26,12 +26,17 @@ class LogOrderHistory
 
     public function handle(OrderStatusChanged $event): void
     {
+        logger()->info('LOG_ORDER_HISTORY_CALLED', [
+            'order_id' => $event->order->id,
+            'old' => $event->oldStatus,
+            'new' => $event->newStatus,
+        ]);
         $this->auditLogger->log(
-            order:       $event->order,
-            userId:      auth()->id() ?? $event->order->assigned_to,
-            actionType:  'status',
-            oldValue:    $event->oldStatus,
-            newValue:    $event->newStatus,
+            order: $event->order,
+            userId: auth()->id() ?? $event->order->assigned_to,
+            actionType: 'status',
+            oldValue: $event->oldStatus,
+            newValue: $event->newStatus,
             description: "Statut de la commande modifié de '{$event->oldStatus}' à '{$event->newStatus}'.",
         );
     }

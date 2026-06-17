@@ -6,7 +6,7 @@ use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Orders\Services\OrderItemsReplacer;
 use App\Domain\Orders\States\OrderStateMachine;
-use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
+use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\ShipmentRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -29,13 +29,17 @@ class UpdateOrderHandler
 
             // 1. Update client if customer fields are provided
             if ($order->client && $this->hasClientData($command)) {
-                $this->clients->update($order->client, array_filter([
-                    'name'    => $command->customerName,
-                    'phone'   => $command->customerPhone,
-                    'email'   => $command->customerEmail,
-                    'city'    => $command->city,
-                    'address' => $command->street,
-                ], fn ($v) => $v !== null));
+                $clientData = [];
+                if (in_array('customer_name', $command->providedFields)) $clientData['name'] = $command->customerName;
+                if (in_array('customer_phone', $command->providedFields)) $clientData['phone'] = $command->customerPhone;
+                if (in_array('customer_email', $command->providedFields)) $clientData['email'] = $command->customerEmail;
+                if (in_array('city', $command->providedFields)) $clientData['city'] = $command->city;
+                if (in_array('province', $command->providedFields)) $clientData['province'] = $command->province;
+                if (in_array('street', $command->providedFields)) $clientData['address'] = $command->street;
+                
+                if (!empty($clientData)) {
+                    $this->clients->update($order->client, $clientData);
+                }
             }
 
             // 2. Replace items if a new items array was provided
@@ -47,34 +51,79 @@ class UpdateOrderHandler
 
             // 3. Update shipment address if address data changed
             if ($this->hasAddressData($command)) {
-                $this->shipments->updateFirstForOrder($order, array_filter([
-                    'recipient_name'  => $command->customerName,
-                    'recipient_phone' => $command->customerPhone,
-                    'address'         => implode(', ', array_filter([
+                $shipmentData = [];
+                if (in_array('customer_name', $command->providedFields)) $shipmentData['recipient_name'] = $command->customerName;
+                if (in_array('customer_phone', $command->providedFields)) $shipmentData['recipient_phone'] = $command->customerPhone;
+                if (in_array('city', $command->providedFields)) $shipmentData['city'] = $command->city;
+                if (in_array('province', $command->providedFields)) $shipmentData['region'] = $command->province;
+                
+                // Construct address string if any part changed
+                if (in_array('street', $command->providedFields) || in_array('city', $command->providedFields) || in_array('province', $command->providedFields)) {
+                    $shipmentData['address'] = implode(', ', array_filter([
                         $command->street,
                         $command->city,
                         $command->province,
-                    ])),
-                    'city'            => $command->city,
-                    'region'          => $command->province,
-                ], fn ($v) => $v !== null));
+                    ]));
+                }
+
+                if (!empty($shipmentData)) {
+                    $this->shipments->updateFirstForOrder($order, $shipmentData);
+                }
             }
 
             // 4. Apply status transition via state machine
-            $orderFields = array_filter([
-                'financial_status' => $command->financialStatus,
-                'notes'            => $command->notes,
-                'shipping_price'   => $command->shippingPrice,
-            ], fn ($v) => $v !== null);
+            $orderFields = [];
+            if (in_array('financial_status', $command->providedFields)) $orderFields['financial_status'] = $command->financialStatus;
+            if (in_array('notes', $command->providedFields)) $orderFields['notes'] = $command->notes;
+            if (in_array('shipping_price', $command->providedFields)) $orderFields['shipping_price'] = $command->shippingPrice;
+            if (in_array('customer_name', $command->providedFields)) $orderFields['customer_name'] = $command->customerName;
+            if (in_array('customer_phone', $command->providedFields)) $orderFields['customer_phone'] = $command->customerPhone;
+            if (in_array('customer_email', $command->providedFields)) $orderFields['customer_email'] = $command->customerEmail;
+            if (in_array('province', $command->providedFields)) $orderFields['province'] = $command->province;
+            if (in_array('city', $command->providedFields)) $orderFields['city'] = $command->city;
+            if (in_array('street', $command->providedFields)) $orderFields['street'] = $command->street;
+            
+            // Also update shipping_address JSON
+            if ($this->hasAddressData($command)) {
+                $shippingAddress = $order->shipping_address ?? [];
+                if (in_array('city', $command->providedFields)) $shippingAddress['city'] = $command->city;
+                if (in_array('province', $command->providedFields)) $shippingAddress['province'] = $command->province;
+                if (in_array('street', $command->providedFields)) $shippingAddress['address1'] = $command->street;
+                $orderFields['shipping_address'] = $shippingAddress;
+            }
 
             if ($command->status !== null && $command->status !== $order->status) {
                 $machine = new OrderStateMachine($order);
                 $machine->transitionTo($command->status);
+                
+
                 $orderFields['status'] = $command->status;
             }
 
             if (! empty($orderFields)) {
                 $this->orders->update($order, $orderFields);
+            }
+            
+            if ($this->hasClientData($command)) {
+                $this->auditLogger->log(
+                    order:       $order,
+                    userId:      $command->actorId,
+                    actionType:  'customer',
+                    oldValue:    null,
+                    newValue:    null,
+                    description: "Informations client mises à jour"
+                );
+            }
+            
+            if ($command->items !== null) {
+                $this->auditLogger->log(
+                    order:       $order,
+                    userId:      $command->actorId,
+                    actionType:  'items',
+                    oldValue:    null,
+                    newValue:    null,
+                    description: "Produits de la commande mis à jour"
+                );
             }
         });
 
@@ -83,15 +132,18 @@ class UpdateOrderHandler
 
     private function hasClientData(UpdateOrderCommand $command): bool
     {
-        return $command->customerName  !== null
-            || $command->customerPhone !== null
-            || $command->customerEmail !== null;
+        return in_array('customer_name', $command->providedFields)
+            || in_array('customer_phone', $command->providedFields)
+            || in_array('customer_email', $command->providedFields)
+            || in_array('city', $command->providedFields)
+            || in_array('province', $command->providedFields)
+            || in_array('street', $command->providedFields);
     }
 
     private function hasAddressData(UpdateOrderCommand $command): bool
     {
-        return $command->city     !== null
-            || $command->province !== null
-            || $command->street   !== null;
+        return in_array('city', $command->providedFields)
+            || in_array('province', $command->providedFields)
+            || in_array('street', $command->providedFields);
     }
 }

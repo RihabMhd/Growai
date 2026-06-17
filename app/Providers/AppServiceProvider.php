@@ -99,6 +99,10 @@ class AppServiceProvider extends ServiceProvider
             )
         );
 
+        $this->app->bind(
+            \App\Domain\Dashboard\Contracts\DashboardRepositoryInterface::class,
+            \App\Infrastructure\Dashboard\EloquentDashboardRepository::class,
+        );
     }
 
     /**

@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Delivery;
 
 use App\Http\Controllers\Controller;
-use App\Models\DeliveryCompany;
+use App\Domain\Shipments\Models\DeliveryCompany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

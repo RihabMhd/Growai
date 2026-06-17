@@ -11,7 +11,7 @@ use App\Application\Dispatch\DispatchOrder\DispatchOrderCommand;
 use App\Application\Dispatch\DispatchOrder\DispatchOrderHandler;
 use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Shopify\Models\Shop;
-use App\Infrastructure\Orders\Repositories\ClientRepositoryInterface;
+use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderSourceRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\ShipmentRepositoryInterface;

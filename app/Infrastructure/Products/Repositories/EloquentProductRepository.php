@@ -184,7 +184,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             'shop_id'      => $data->shopId,
             'title'        => $data->title,
             'status'       => $data->status,
-            'source_type'  => $data->sourceType,
+            'source_type' => $data->sourceType ?? 'manual',
             'vendor'       => $data->vendor,
             'product_type' => $data->productType,
             'handle'       => $data->handle,

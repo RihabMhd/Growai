@@ -21,19 +21,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->remove(\Illuminate\Http\Middleware\FrameGuard::class);
 
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
 
         $middleware->alias([
             'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
             'admin'    => \App\Http\Middleware\AdminOnly::class,
         ]);
 
-        $middleware->statefulApi();
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(function (Request $request) {
             return $request->is('api/*');
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
         });
     })->create();

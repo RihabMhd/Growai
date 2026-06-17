@@ -7,7 +7,7 @@ use App\Listeners\SendWhatsappNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-
+use App\Listeners\ProcessCommission;
 class EventServiceProvider extends ServiceProvider
 {
     /**
@@ -17,9 +17,8 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         \App\Domain\Orders\Events\OrderStatusChanged::class => [
-            \App\Listeners\LogOrderHistory::class,
-            \App\Listeners\ProcessCommission::class,
-            \App\Listeners\SendWhatsappNotification::class,
+            ProcessCommission::class,
+            SendWhatsappNotification::class,
         ],
         Registered::class => [
             SendEmailVerificationNotification::class,
