@@ -14,13 +14,13 @@ class OrderResource extends JsonResource
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
-{
-    return [
-        ...parent::toArray($request),
+    {
+        return [
+            ...parent::toArray($request),
 
-        'histories' => OrderHistoryResource::collection(
-            $this->whenLoaded('histories')
-        ),
-    ];
-}[]
+            'histories' => OrderHistoryResource::collection(
+                $this->whenLoaded('histories')
+            ),
+        ];
+    }
 }
