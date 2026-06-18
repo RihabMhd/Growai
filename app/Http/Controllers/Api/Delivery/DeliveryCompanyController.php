@@ -2,191 +2,152 @@
 
 namespace App\Http\Controllers\Api\Delivery;
 
+use App\Application\Delivery\DeliveryCompany\Actions\ConnectCarrierAction;
+use App\Application\Delivery\DeliveryCompany\Actions\DisconnectCarrierAction;
+use App\Application\Delivery\DeliveryCompany\Actions\GetDeliveryCompanyAction;
+use App\Application\Delivery\DeliveryCompany\Actions\ListDeliveryCompaniesAction;
+use App\Application\Delivery\DeliveryCompany\Actions\RegisterCarrierWebhookAction;
+use App\Application\Delivery\DeliveryCompany\Actions\TestCarrierConnectionAction;
+use App\Application\Delivery\DeliveryCompany\Actions\UnregisterCarrierWebhookAction;
+use App\Application\Delivery\DeliveryCompany\Commands\ConnectCarrierCommand;
+use App\Application\Delivery\DeliveryCompany\Commands\DisconnectCarrierCommand;
+use App\Application\Delivery\DeliveryCompany\Commands\RegisterCarrierWebhookCommand;
+use App\Application\Delivery\DeliveryCompany\Commands\UnregisterCarrierWebhookCommand;
+use App\Domain\Delivery\DeliveryCompany\Exceptions\CarrierNotConnectedException;
+use App\Domain\Delivery\DeliveryCompany\Exceptions\DeliveryCompanyNotFoundException;
 use App\Http\Controllers\Controller;
-use App\Domain\Shipments\Models\DeliveryCompany;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
-class DeliveryCompanyController extends Controller
+final class DeliveryCompanyController extends Controller
 {
-    /**
-     * List all delivery companies
-     */
-    public function index(Request $request)
-    {
-        $query = DeliveryCompany::query();
+    public function __construct(
+        private readonly ListDeliveryCompaniesAction $listCompanies,
+        private readonly GetDeliveryCompanyAction $getCompany,
+        private readonly ConnectCarrierAction $connectCarrier,
+        private readonly DisconnectCarrierAction $disconnectCarrier,
+        private readonly RegisterCarrierWebhookAction $registerWebhook,
+        private readonly UnregisterCarrierWebhookAction $unregisterWebhook,
+        private readonly TestCarrierConnectionAction $testCarrierConnection,
+    ) {}
 
-        if ($request->filled('active')) {
-            $query->where('is_active', $request->boolean('active'));
+    public function index(Request $request): JsonResponse
+    {
+        $companies = $this->listCompanies->execute(
+            $request->filled('active') ? $request->boolean('active') : null
+        );
+
+        return response()->json(['companies' => $companies]);
+    }
+
+    public function show(string $id): JsonResponse
+    {
+        try {
+            $company = $this->getCompany->execute((int) $id);
+
+            return response()->json([
+                'company' => $company,
+                'is_connected' => (bool) $company->is_active && $company->api_key,
+                'subscription_status' => [
+                    'webhook_enabled' => (bool) $company->webhook_enabled,
+                    'webhook_registered_at' => $company->webhook_registered_at,
+                ],
+            ]);
+        } catch (DeliveryCompanyNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
         }
-
-        $companies = $query->get();
-
-        return response()->json([
-            'companies' => $companies,
-        ]);
     }
 
-    /**
-     * Get a specific delivery company with connection status
-     */
-    public function show(string $id)
-    {
-        $company = DeliveryCompany::findOrFail($id);
-
-        return response()->json([
-            'company' => $company,
-            'is_connected' => $company->isConnected(),
-            'subscription_status' => $company->getSubscriptionStatus(),
-        ]);
-    }
-
-    /**
-     * Connect a delivery company (store credentials)
-     */
-    public function connect(Request $request, string $id)
+    public function connect(Request $request, string $id): JsonResponse
     {
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
-        $company = DeliveryCompany::findOrFail($id);
 
         $validated = $request->validate([
-            'api_key'    => 'required|string',
+            'api_key' => 'required|string',
             'api_secret' => 'nullable|string',
-            'username'   => 'nullable|string',
-            'password'   => 'nullable|string',
+            'username' => 'nullable|string',
+            'password' => 'nullable|string',
+            'field_mapping' => 'nullable|array',
         ]);
 
-        // Store credentials securely (encrypted in the database)
-        $company->update([
-            'api_key' => encrypt($validated['api_key']),
-            'credentials' => json_encode([
-                'api_secret' => isset($validated['api_secret']) ? encrypt($validated['api_secret']) : null,
-                'username' => isset($validated['username']) ? encrypt($validated['username']) : null,
-                'password' => isset($validated['password']) ? encrypt($validated['password']) : null,
-            ]),
-            'is_active' => true,
-        ]);
+        try {
+            $config = $this->connectCarrier->execute(new ConnectCarrierCommand(
+                deliveryCompanyId: (int) $id,
+                teamId: (int) $request->user()->team_id,
+                apiKey: $validated['api_key'],
+                apiSecret: $validated['api_secret'] ?? null,
+                username: $validated['username'] ?? null,
+                password: $validated['password'] ?? null,
+                fieldMapping: $validated['field_mapping'] ?? null,
+            ));
 
-        return response()->json([
-            'message' => 'Transporteur connecté avec succès.',
-            'company' => $company,
-        ]);
-    }
-
-    /**
-     * Disconnect a delivery company
-     */
-    public function disconnect(string $id)
-    {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json([
+                'message' => 'Transporteur connecté avec succès.',
+                'configuration' => $config,
+            ]);
+        } catch (DeliveryCompanyNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
         }
-
-        $company = DeliveryCompany::findOrFail($id);
-        $company->update([
-            'api_key' => null,
-            'credentials' => null,
-            'is_active' => false,
-        ]);
-
-        return response()->json([
-            'message' => 'Transporteur déconnecté avec succès.',
-            'company' => $company,
-        ]);
     }
 
-    /**
-     * Enable orders updates subscription with the carrier
-     */
-    public function enableOrdersUpdates(Request $request, string $id)
+    public function disconnect(Request $request, string $id): JsonResponse
     {
         if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $company = DeliveryCompany::findOrFail($id);
+        $this->disconnectCarrier->execute(new DisconnectCarrierCommand(
+            deliveryCompanyId: (int) $id,
+            teamId: (int) $request->user()->team_id,
+        ));
 
-        if (!$company->isConnected()) {
-            return response()->json([
-                'message' => 'Le transporteur n\'est pas connecté.',
-            ], 422);
-        }
-
-        // Register the webhook with the carrier
-        try {
-            $result = $company->registerWebhook($request->getHost());
-            
-            $company->update([
-                'webhook_enabled' => true,
-                'webhook_registered_at' => now(),
-            ]);
-
-            return response()->json([
-                'message' => 'Mise à jour des commandes activée avec succès.',
-                'company' => $company,
-                'webhook_result' => $result,
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Failed to enable orders updates for company {$id}", ['error' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Erreur lors de l\'activation des mises à jour: ' . $e->getMessage(),
-            ], 422);
-        }
+        return response()->json(['message' => 'Transporteur déconnecté avec succès.']);
     }
 
-    /**
-     * Disable orders updates subscription
-     */
-    public function disableOrdersUpdates(string $id)
+    public function enableOrdersUpdates(Request $request, string $id): JsonResponse
     {
-        if (auth()->user()->role !== 'admin') {
+        if ($request->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $company = DeliveryCompany::findOrFail($id);
-
         try {
-            // Unregister webhook with carrier
-            $company->unregisterWebhook();
-
-            $company->update([
-                'webhook_enabled' => false,
-            ]);
+            $this->registerWebhook->execute(new RegisterCarrierWebhookCommand(
+                deliveryCompanyId: (int) $id,
+                teamId: (int) $request->user()->team_id,
+                host: $request->getHost(),
+            ));
 
             return response()->json([
-                'message' => 'Mise à jour des commandes désactivée avec succès.',
-                'company' => $company,
+                'message' => 'Mise à jour des commandes activée. Enregistrement webhook en cours.',
             ]);
-        } catch (\Exception $e) {
-            Log::error("Failed to disable orders updates for company {$id}", ['error' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Erreur lors de la désactivation des mises à jour: ' . $e->getMessage(),
-            ], 422);
+        } catch (CarrierNotConnectedException|DeliveryCompanyNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
     }
 
-    /**
-     * Test connection to delivery company
-     */
-    public function testConnection(string $id)
+    public function disableOrdersUpdates(Request $request, string $id): JsonResponse
     {
-        $company = DeliveryCompany::findOrFail($id);
-
-        try {
-            $isConnected = $company->testConnection();
-
-            return response()->json([
-                'connected' => $isConnected,
-                'message' => $isConnected ? 'Connexion réussie.' : 'Erreur de connexion.',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'connected' => false,
-                'message' => 'Erreur: ' . $e->getMessage(),
-            ], 422);
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+        $this->unregisterWebhook->execute(new UnregisterCarrierWebhookCommand(
+            deliveryCompanyId: (int) $id,
+            teamId: (int) $request->user()->team_id,
+        ));
+
+        return response()->json(['message' => 'Mise à jour des commandes désactivée avec succès.']);
+    }
+
+    public function testConnection(string $id): JsonResponse
+    {
+        $connected = $this->testCarrierConnection->execute((int) $id);
+
+        return response()->json([
+            'connected' => $connected,
+            'message' => $connected ? 'Connexion réussie.' : 'Erreur de connexion.',
+        ], $connected ? 200 : 422);
     }
 }

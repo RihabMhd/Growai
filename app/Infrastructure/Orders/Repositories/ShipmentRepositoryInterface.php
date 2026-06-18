@@ -2,25 +2,15 @@
 
 namespace App\Infrastructure\Orders\Repositories;
 
-use App\Domain\Shipments\Models\Shipment;
+use App\Infrastructure\Delivery\Persistence\Eloquent\Models\ShipmentModel;
 use App\Domain\Orders\Models\Order;
 
 /**
- * Domain contract for shipment persistence.
- *
- * Bind in AppServiceProvider:
- *   $this->app->bind(ShipmentRepositoryInterface::class, EloquentShipmentRepository::class);
+ * Order-module adapter for shipment persistence.
  */
 interface ShipmentRepositoryInterface
 {
-    /**
-     * Create a shipment record for the given order.
-     */
-    public function createForOrder(Order $order, array $data): Shipment;
+    public function createForOrder(Order $order, array $data): ShipmentModel;
 
-    /**
-     * Update the first shipment on an order with the given data.
-     * Returns the updated shipment, or null if none exists.
-     */
-    public function updateFirstForOrder(Order $order, array $data): ?Shipment;
+    public function updateFirstForOrder(Order $order, array $data): ?ShipmentModel;
 }
