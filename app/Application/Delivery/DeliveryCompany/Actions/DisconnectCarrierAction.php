@@ -4,7 +4,6 @@ namespace App\Application\Delivery\DeliveryCompany\Actions;
 
 use App\Application\Delivery\DeliveryCompany\Commands\DisconnectCarrierCommand;
 use App\Domain\Delivery\DeliveryCompany\Entities\CarrierConfiguration;
-use App\Domain\Delivery\DeliveryCompany\Entities\CarrierConfiguration;
 use App\Domain\Delivery\DeliveryCompany\Exceptions\DeliveryCompanyNotFoundException;
 use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
 use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;

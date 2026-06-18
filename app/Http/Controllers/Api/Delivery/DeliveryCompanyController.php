@@ -18,6 +18,7 @@ use App\Domain\Delivery\DeliveryCompany\Exceptions\DeliveryCompanyNotFoundExcept
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 final class DeliveryCompanyController extends Controller
 {
@@ -60,7 +61,14 @@ final class DeliveryCompanyController extends Controller
 
     public function connect(Request $request, string $id): JsonResponse
     {
-        if ($request->user()->role !== 'admin') {
+        Log::info('CONNECT CALLED', [
+            'user_id' => $request->user()?->id,
+            'role' => $request->user()?->role,
+            'company_id' => $id,
+            'payload' => $request->all(),
+        ]);
+
+        if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -94,7 +102,7 @@ final class DeliveryCompanyController extends Controller
 
     public function disconnect(Request $request, string $id): JsonResponse
     {
-        if ($request->user()->role !== 'admin') {
+        if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -108,7 +116,7 @@ final class DeliveryCompanyController extends Controller
 
     public function enableOrdersUpdates(Request $request, string $id): JsonResponse
     {
-        if ($request->user()->role !== 'admin') {
+        if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -122,14 +130,14 @@ final class DeliveryCompanyController extends Controller
             return response()->json([
                 'message' => 'Mise à jour des commandes activée. Enregistrement webhook en cours.',
             ]);
-        } catch (CarrierNotConnectedException|DeliveryCompanyNotFoundException $e) {
+        } catch (CarrierNotConnectedException | DeliveryCompanyNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }
 
     public function disableOrdersUpdates(Request $request, string $id): JsonResponse
     {
-        if ($request->user()->role !== 'admin') {
+        if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
