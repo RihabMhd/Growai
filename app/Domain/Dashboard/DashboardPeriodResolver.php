@@ -70,12 +70,6 @@ final class DashboardPeriodResolver
         $prevStart     = $prevEnd->copy()->subSeconds($lengthSeconds);
 
 
-        Log::debug('Dashboard range', [
-            'period' => $period,
-            'start' => $start,
-            'end' => $end,
-        ]);
-
         return new DateRange($start, $end, $prevStart, $prevEnd);
     }
 }

@@ -70,7 +70,6 @@ final readonly class ShopifyProductImporter
 
     public function upsert(Shop $shop, ShopifyProductDTO $dto): Product
     {
-        Log::info('DTO_VARIANTS', ['product_id' => $dto->id, 'variants' => $dto->variants]);
 
         $existing = Product::where('shop_id', $shop->id)
             ->where('external_product_id', $dto->id)

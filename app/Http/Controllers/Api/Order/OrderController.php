@@ -99,10 +99,8 @@ class OrderController extends Controller
         return response()->json(
             new OrderResource(
                 $order->load([
-                    'histories.user',
-                    'items.product',
-                    'client',
-                    'assignedAgent'
+                    'histories.user:id,name',
+                    'assignedAgent:id,name',
                 ])
             )
         );
