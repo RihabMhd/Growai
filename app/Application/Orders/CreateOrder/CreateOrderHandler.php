@@ -59,12 +59,13 @@ class CreateOrderHandler
                 'shipping_price'   => $command->shippingPrice,
                 'discount'         => 0.00,
                 'currency'         => 'MAD',
-                'status'           => 'pending',
+                'status'           => 'nouveau',
                 'financial_status' => 'unpaid',
                 'notes'            => $command->notes,
                 'source_channel'   => $command->source,
                 'is_abandoned'     => $command->isAbandoned,
                 'abandoned_at'     => $command->isAbandoned ? now() : null,
+                'created_at'       => now(),
             ]);
 
             // 3b. Create items and accumulate subtotal
@@ -118,7 +119,7 @@ class CreateOrderHandler
                 userId: $command->createdByUserId,
                 actionType: 'status_changed',
                 oldValue: null,
-                newValue: 'pending',
+                newValue: 'nouveau',
                 description: 'Commande créée manuellement.',
             );
 

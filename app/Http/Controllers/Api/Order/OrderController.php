@@ -58,6 +58,7 @@ class OrderController extends Controller
     // POST /orders
     // ─────────────────────────────────────────────────────────────────────────
 
+    // OrderController.php - store() method
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -71,10 +72,14 @@ class OrderController extends Controller
             'notes'          => 'nullable|string',
             'is_abandoned'   => 'nullable|boolean',
             'shipping_price' => 'nullable|numeric|min:0',
+            // Remove 'status' from validation - it should not be settable
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
         ]);
+
+        // Explicitly set status to 'nouveau' (new)
+        $validated['status'] = 'nouveau';
 
         $order = $this->createOrder->handle(
             CreateOrderCommand::fromArray($validated, $request->user()->id)
@@ -87,13 +92,18 @@ class OrderController extends Controller
     // GET /orders/{id}
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function toArray(Request $request): array
+    public function show(int|string $id): JsonResponse
     {
-        return [
-            ...parent::toArray($request),
+        $order = $this->getOrder->handle($id);
 
-            'histories' => $this->histories,
-        ];
+        return response()->json(
+            new OrderResource(
+                $order->load([
+                    'histories.user:id,name',
+                    'assignedAgent:id,name',
+                ])
+            )
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────

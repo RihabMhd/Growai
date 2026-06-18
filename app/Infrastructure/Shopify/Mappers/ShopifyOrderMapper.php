@@ -102,6 +102,6 @@ final class ShopifyOrderMapper
             return 'partial';
         }
 
-        return 'pending';
+        return 'nouveau';
     }
 }
