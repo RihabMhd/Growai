@@ -1,0 +1,61 @@
+<?php
+// app/Application/CarrierActions/Commands/RegisterWebhookHandler.php
+
+namespace App\Application\CarrierActions\Commands;
+
+use App\Domain\Companies\Contracts\DeliveryCompanyRepositoryInterface;
+use App\Domain\Companies\Contracts\CarrierConfigurationRepositoryInterface;
+use App\Domain\CarrierActions\Contracts\CarrierActionDefinitionProvider;
+use App\Domain\CarrierActions\ValueObjects\ActionDefinition;
+use App\Infrastructure\Carriers\Contracts\CarrierHttpClientFactory;
+use Throwable;
+
+final class RegisterWebhookHandler
+{
+    public function __construct(
+        private readonly DeliveryCompanyRepositoryInterface $companyRepo,
+        private readonly CarrierConfigurationRepositoryInterface $configRepo,
+        private readonly CarrierActionDefinitionProvider $definitions,
+        private readonly CarrierHttpClientFactory $clientFactory,
+    ) {}
+
+    public function handle(RegisterWebhookCommand $command): array
+    {
+        $company = $this->companyRepo->findOrFail($command->companyId);
+        $config = $this->configRepo->findOrCreateByTeamAndCompany($command->teamId, $company->id);
+
+        $webhookAction = collect($this->definitions->definitionsFor($company->slug))
+            ->first(fn (ActionDefinition $a) => $a->category === ActionDefinition::CATEGORY_WEBHOOK);
+
+        abort_unless($webhookAction, 404, 'No webhook action defined for carrier');
+
+        $url = url("/api/webhooks/delivery/{$company->slug}");
+
+        $client = $this->clientFactory->forCarrier($company->slug, $config);
+
+        $mapping = $config->field_mapping_json ?? [];
+        $webhookMapping = $mapping[$webhookAction->key] ?? [];
+        $webhookMapping['url'] = $url;
+
+        try {
+            $response = $client->registerWebhook($url);
+            $webhookMapping['registered'] = true;
+            $webhookMapping['last_response'] = $response;
+            $webhookMapping['last_error'] = null;
+            $result = ['ok' => true, 'url' => $url, 'response' => $response];
+        } catch (Throwable $e) {
+            $webhookMapping['registered'] = false;
+            $webhookMapping['last_error'] = $e->getMessage();
+            $result = ['ok' => false, 'url' => $url, 'error' => $e->getMessage()];
+        }
+
+        $mapping[$webhookAction->key] = $webhookMapping;
+
+        $this->configRepo->update($config->id, [
+            'field_mapping_json' => $mapping,
+            'webhook_enabled' => $webhookMapping['registered'] ?? false,
+        ]);
+
+        return $result;
+    }
+}

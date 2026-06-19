@@ -218,7 +218,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/disable-updates', [DeliveryCompanyController::class, 'disableOrdersUpdates']);
         Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
-
+    Route::get('/companies/{id}/actions', [DeliveryCompanyController::class, 'actions']);
+    Route::put('/companies/{id}/actions/{action}', [DeliveryCompanyController::class, 'saveActionConfig']);
+    Route::post('/companies/{id}/actions/{action}/test', [DeliveryCompanyController::class, 'testAction']);
+    Route::post('/companies/{id}/webhook/register', [DeliveryCompanyController::class, 'registerWebhook']);
     /*
     |--------------------------------------------------------------------------
     | Order Statuses

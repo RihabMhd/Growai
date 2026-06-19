@@ -80,6 +80,10 @@ final class DeliveryCompanyController extends Controller
             'field_mapping' => 'nullable|array',
         ]);
 
+        if (!$request->user()->team_id) {
+            return response()->json(['message' => 'User is not assigned to a team.'], 422);
+        }
+
         try {
             $config = $this->connectCarrier->execute(new ConnectCarrierCommand(
                 deliveryCompanyId: (int) $id,
@@ -97,6 +101,13 @@ final class DeliveryCompanyController extends Controller
             ]);
         } catch (DeliveryCompanyNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            Log::error('Carrier connection failed', [
+                'user_id' => $request->user()->id,
+                'company_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Failed to connect carrier. Please try again.'], 422);
         }
     }
 
@@ -104,6 +115,10 @@ final class DeliveryCompanyController extends Controller
     {
         if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$request->user()->team_id) {
+            return response()->json(['message' => 'User is not assigned to a team.'], 422);
         }
 
         $this->disconnectCarrier->execute(new DisconnectCarrierCommand(
@@ -118,6 +133,10 @@ final class DeliveryCompanyController extends Controller
     {
         if (!$request->user()->role->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$request->user()->team_id) {
+            return response()->json(['message' => 'User is not assigned to a team.'], 422);
         }
 
         try {
@@ -141,6 +160,10 @@ final class DeliveryCompanyController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        if (!$request->user()->team_id) {
+            return response()->json(['message' => 'User is not assigned to a team.'], 422);
+        }
+
         $this->unregisterWebhook->execute(new UnregisterCarrierWebhookCommand(
             deliveryCompanyId: (int) $id,
             teamId: (int) $request->user()->team_id,
@@ -157,5 +180,57 @@ final class DeliveryCompanyController extends Controller
             'connected' => $connected,
             'message' => $connected ? 'Connexion réussie.' : 'Erreur de connexion.',
         ], $connected ? 200 : 422);
+    }
+
+    public function actions(string $id): JsonResponse
+    {
+        return response()->json([
+            'actions' => [
+                [
+                    'key' => 'createParcel',
+                    'label' => 'Create Parcel',
+                    'method' => 'POST',
+                    'group' => 'MAIN ACTION',
+                    'credentials' => [],
+                    'fields' => [],
+                    'saved_credentials' => [],
+                    'saved_prefilled' => [],
+                    'saved_hidden' => [],
+                    'auto_create_enabled' => false,
+                    'config_state' => 'configured',
+                    'test_state' => 'pending',
+                ],
+                [
+                    'key' => 'getStatus',
+                    'label' => 'Get Status',
+                    'method' => 'GET',
+                    'group' => 'TRACKING',
+                    'credentials' => [],
+                    'fields' => [],
+                    'saved_credentials' => [],
+                    'saved_prefilled' => [],
+                    'saved_hidden' => [],
+                    'auto_create_enabled' => false,
+                    'config_state' => 'configured',
+                    'test_state' => 'pending',
+                ],
+                [
+                    'key' => 'ordersUpdates',
+                    'label' => 'Orders Updates',
+                    'method' => 'WEBHOOK',
+                    'group' => 'WEBHOOKS',
+                    'credentials' => [],
+                    'fields' => [],
+                    'saved_credentials' => [],
+                    'saved_prefilled' => [],
+                    'saved_hidden' => [],
+                    'auto_create_enabled' => false,
+                    'config_state' => 'configured',
+                    'test_state' => 'pending',
+                    'webhook_url' => url("/api/webhooks/delivery/{$id}"),
+                    'webhook_status' => 'pending',
+                ],
+            ]
+        ]);
     }
 }

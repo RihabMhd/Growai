@@ -16,6 +16,7 @@ class RegisterHandler
     public function handle(RegisterCommand $command): array
     {
         $user = User::create([
+            'team_id'   => 1,
             'name'      => $command->name,
             'email'     => $command->email,
             'password'  => $this->passwordHasher->hash($command->password),

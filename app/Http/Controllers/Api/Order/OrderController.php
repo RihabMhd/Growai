@@ -58,7 +58,6 @@ class OrderController extends Controller
     // POST /orders
     // ─────────────────────────────────────────────────────────────────────────
 
-    // OrderController.php - store() method
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -72,14 +71,10 @@ class OrderController extends Controller
             'notes'          => 'nullable|string',
             'is_abandoned'   => 'nullable|boolean',
             'shipping_price' => 'nullable|numeric|min:0',
-            // Remove 'status' from validation - it should not be settable
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
         ]);
-
-        // Explicitly set status to 'nouveau' (new)
-        $validated['status'] = 'nouveau';
 
         $order = $this->createOrder->handle(
             CreateOrderCommand::fromArray($validated, $request->user()->id)
@@ -96,14 +91,7 @@ class OrderController extends Controller
     {
         $order = $this->getOrder->handle($id);
 
-        return response()->json(
-            new OrderResource(
-                $order->load([
-                    'histories.user:id,name',
-                    'assignedAgent:id,name',
-                ])
-            )
-        );
+        return response()->json(new OrderResource($order));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -172,8 +160,8 @@ class OrderController extends Controller
 
         $count = $this->bulkAssignOrders->handle(new BulkAssignOrdersCommand(
             orderIds: $validated['order_ids'],
-            agentId: $validated['agent_id'] ?? null,
-            actorId: $request->user()->id,
+            agentId:  $validated['agent_id'] ?? null,
+            actorId:  $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);
@@ -194,9 +182,9 @@ class OrderController extends Controller
         ]);
 
         $count = $this->bulkUpdateStatus->handle(new BulkUpdateOrderStatusCommand(
-            orderIds: $validated['order_ids'],
+            orderIds:  $validated['order_ids'],
             newStatus: $validated['status'],
-            actorId: $request->user()->id,
+            actorId:   $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);

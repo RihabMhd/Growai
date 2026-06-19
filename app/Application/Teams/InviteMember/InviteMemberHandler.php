@@ -1,7 +1,6 @@
 <?php
 namespace App\Application\Teams\InviteMember;
 
-use App\Domain\Teams\TeamRepositoryInterface;
 use App\Domain\Teams\Models\{User, MemberRole};
 use App\Infrastructure\Mail\TeamInvitationMailerInterface;
 use Illuminate\Support\{Str, Facades\Hash};
@@ -9,19 +8,17 @@ use Illuminate\Support\{Str, Facades\Hash};
 class InviteMemberHandler
 {
     public function __construct(
-        private TeamRepositoryInterface      $teams,
         private TeamInvitationMailerInterface $mailer,
     ) {}
 
     public function handle(InviteMemberCommand $cmd): array
     {
-        $team        = $this->teams->getOrCreateDefault();
         $role        = MemberRole::fromInput($cmd->role);
         $name        = ucwords(str_replace(['.','_','-'], ' ', explode('@', $cmd->email)[0]));
         $tempPassword= 'Growai@' . Str::upper(Str::random(6)) . '!';
 
         $user = User::create([
-            'team_id'            => $team->id,
+            'team_id'            => 1,
             'name'               => $name,
             'email'              => $cmd->email,
             'password'           => Hash::make($tempPassword),
