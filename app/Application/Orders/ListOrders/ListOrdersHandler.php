@@ -47,6 +47,7 @@ class ListOrdersHandler
         $this->applySearch($builder, $query);
         $this->applyTypeFilter($builder, $query);
         $this->applyStatusFilter($builder, $query);
+        $this->applyAbandonedFilter($builder, $query);
 
         return $builder;
     }
@@ -76,5 +77,14 @@ class ListOrdersHandler
         }
 
         $builder->where('status', $query->status);
+    }
+
+    private function applyAbandonedFilter(Builder $builder, ListOrdersQuery $query): void
+    {
+        if ($query->isAbandoned === null) {
+            return;
+        }
+
+        $builder->where('is_abandoned', $query->isAbandoned);
     }
 }

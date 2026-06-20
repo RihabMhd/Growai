@@ -50,6 +50,11 @@ final class AmeexActionDefinitions implements CarrierDefinitionSet
                 label: 'Create Product Copy',
                 category: ActionDefinition::CATEGORY_LOOKUP,
                 method: 'POST',
+                fields: [
+                    new FieldDefinition('ref', 'ref', 'text', true),
+                    new FieldDefinition('name', 'name', 'text', true),
+                    new FieldDefinition('api_id', 'Api ID', 'text', true),
+                ],
             ),
             new ActionDefinition(
                 key: 'status',

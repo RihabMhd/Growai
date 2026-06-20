@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 
 use App\Http\Controllers\Api\Order\OrderController;
+use App\Http\Controllers\Api\Order\AbandonedOrderController;
+use App\Http\Controllers\Api\Order\RecoveryRuleController;
 
 use App\Http\Controllers\Api\Shopify\ShopifyAuthController;
 use App\Http\Controllers\Api\Shopify\ShopifyController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Api\Order\OrderStatusController;
 use App\Http\Controllers\Api\Delivery\ShipmentController;
 use App\Http\Controllers\Api\Team\TeamController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\Delivery\CarrierActionController;
 
 use App\Http\Controllers\Api\Products\ProductController;
 use App\Http\Controllers\Api\Shops\ShopSessionController;
@@ -158,12 +161,19 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
+    Route::get('/abandoned-orders', [AbandonedOrderController::class, 'index']);
+    Route::get('/recovery-rules', [RecoveryRuleController::class, 'index']);
+    Route::post('/recovery-rules', [RecoveryRuleController::class, 'store']);
+    Route::put('/recovery-rules/{id}', [RecoveryRuleController::class, 'update']);
+    Route::delete('/recovery-rules/{id}', [RecoveryRuleController::class, 'destroy']);
+
     Route::prefix('orders')->group(function () {
         Route::get('/',               [OrderController::class, 'index']);
         Route::post('/',               [OrderController::class, 'store']);
         Route::post('/sync-abandoned', [OrderController::class, 'syncAbandoned']);
         Route::put('/bulk/status',    [OrderController::class, 'bulkUpdateStatus']);
         Route::put('/bulk/assign',    [OrderController::class, 'bulkAssign']);
+        Route::post('/{id}/recover',  [OrderController::class, 'recover']);
         Route::get('/{id}',           [OrderController::class, 'show']);
         Route::put('/{id}',           [OrderController::class, 'update']);
         Route::post('/{id}/assign',    [OrderController::class, 'assign']);
@@ -218,10 +228,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/disable-updates', [DeliveryCompanyController::class, 'disableOrdersUpdates']);
         Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
-    Route::get('/companies/{id}/actions', [DeliveryCompanyController::class, 'actions']);
-    Route::put('/companies/{id}/actions/{action}', [DeliveryCompanyController::class, 'saveActionConfig']);
-    Route::post('/companies/{id}/actions/{action}/test', [DeliveryCompanyController::class, 'testAction']);
-    Route::post('/companies/{id}/webhook/register', [DeliveryCompanyController::class, 'registerWebhook']);
+
+
+
+    Route::get('/companies/{id}/actions', [CarrierActionController::class, 'index']);
+    Route::put('/companies/{id}/actions/{action}', [CarrierActionController::class, 'update']);
+    Route::post('/companies/{id}/actions/{action}/test', [CarrierActionController::class, 'test']);
+    Route::post('/companies/{id}/webhook/register', [CarrierActionController::class, 'registerWebhook']);
     /*
     |--------------------------------------------------------------------------
     | Order Statuses

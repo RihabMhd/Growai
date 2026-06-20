@@ -13,6 +13,7 @@ use App\Application\Orders\CreateOrder\CreateOrderHandler;
 use App\Application\Orders\GetOrder\GetOrderHandler;
 use App\Application\Orders\ListOrders\ListOrdersQuery;
 use App\Application\Orders\ListOrders\ListOrdersHandler;
+use App\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler;
 use App\Application\Orders\SyncAbandonedOrders\SyncAbandonedOrdersHandler;
 use App\Application\Orders\UpdateOrder\UpdateOrderCommand;
 use App\Application\Orders\UpdateOrder\UpdateOrderHandler;
@@ -34,6 +35,7 @@ class OrderController extends Controller
         private readonly AssignOrderHandler           $assignOrder,
         private readonly BulkAssignOrdersHandler      $bulkAssignOrders,
         private readonly BulkUpdateOrderStatusHandler $bulkUpdateStatus,
+        private readonly RecoverAbandonedOrderHandler $recoverAbandonedOrder,
         private readonly SyncAbandonedOrdersHandler   $syncAbandoned,
     ) {}
 
@@ -147,6 +149,13 @@ class OrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     // POST /orders/bulk-assign
     // ─────────────────────────────────────────────────────────────────────────
+
+    public function recover(Request $request, int|string $id): JsonResponse
+    {
+        $order = $this->recoverAbandonedOrder->handle($id, $request->user()->id);
+
+        return response()->json(new OrderResource($order));
+    }
 
     public function bulkAssign(Request $request): JsonResponse
     {

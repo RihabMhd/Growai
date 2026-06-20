@@ -6,8 +6,8 @@ namespace App\Application\CarrierActions\Queries;
 use App\Application\CarrierActions\DTOs\ActionResponseDTO;
 use App\Domain\CarrierActions\Contracts\CarrierActionDefinitionProvider;
 use App\Domain\CarrierActions\ValueObjects\ActionDefinition;
-use App\Domain\Companies\Contracts\DeliveryCompanyRepositoryInterface;
-use App\Domain\Companies\Contracts\CarrierConfigurationRepositoryInterface;
+use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
+use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;
 
 final class GetCarrierActionsHandler
 {
@@ -22,12 +22,14 @@ final class GetCarrierActionsHandler
      */
     public function handle(GetCarrierActionsQuery $query): array
     {
-        $company = $this->companyRepo->findOrFail($query->companyId);
+        $company = $this->companyRepo->findById($query->companyId);
 
-        $config = $this->configRepo->findByTeamAndCompany($query->teamId, $company->id);
+        abort_unless($company, 404, 'Delivery company not found');
 
-        $credentialsJson = $config?->credentials_json ?? [];
-        $mappingJson = $config?->field_mapping_json ?? [];
+        $config = $this->configRepo->findForTeamAndCarrier($query->teamId, $company->id);
+
+        $credentialsJson = $config?->credentials ?? [];
+        $mappingJson = $config?->fieldMapping ?? [];
 
         $definitions = $this->definitions->definitionsFor($company->slug);
 
@@ -57,7 +59,7 @@ final class GetCarrierActionsHandler
             savedPrefilled: $savedAction['prefilled'] ?? [],
             savedHidden: $savedHidden,
             autoCreateEnabled: $def->supportsAutoCreate
-                ? (bool) ($config?->auto_create_parcel ?? false)
+                ? (bool) ($config?->autoCreateParcel ?? false)
                 : null,
             testStatus: $savedAction['test_status'] ?? 'pending',
             lastResponse: $savedAction['last_response'] ?? null,

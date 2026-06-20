@@ -38,7 +38,7 @@ class OrderStateMachine
         'doublon'      => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'wrong_number'],
         'wrong_number' => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'doublon'],
         // legacy slug aliases
-        'no_answer'    => ['nouveau', 'confirmed', 'rappel', 'cancelled', 'doublon', 'wrong_number', 'no_response'],
+        'no_answer'    => ['nouveau', 'confirmed', 'rappel', 'cancelled', 'doublon', 'wrong_number', 'no_response', 'abandoned'],
         'callback'     => ['nouveau', 'confirmed', 'no_response', 'cancelled', 'doublon', 'wrong_number', 'rappel'],
         'duplicate'    => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'wrong_number', 'doublon'],
         'wrong_num'    => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'doublon', 'wrong_number'],
@@ -51,7 +51,7 @@ class OrderStateMachine
         'delivered'  => ['returned'],
         'cancelled'  => ['nouveau', 'confirmed', 'no_response', 'rappel', 'doublon', 'wrong_number'],
         'returned'   => [],
-        'abandoned'  => ['pending', 'nouveau'],
+        'abandoned'  => ['pending', 'nouveau', 'recovered'],
     ];
 
     public function __construct(

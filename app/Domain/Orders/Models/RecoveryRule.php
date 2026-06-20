@@ -9,11 +9,13 @@ class RecoveryRule extends Model
     use HasFactory;
 
     protected $fillable = [
+        'team_id',
         'template_id',
         'name',
         'trigger_condition',
         'action',
         'delay_minutes',
+        'message_template',
         'is_active'
     ];
 
