@@ -23,16 +23,20 @@ final class ConnectCarrierAction
             throw DeliveryCompanyNotFoundException::withId($command->deliveryCompanyId);
         }
 
-        $encryptedCredentials = [
-            'api_key' => encrypt($command->apiKey),
-            'api_secret' => $command->apiSecret ? encrypt($command->apiSecret) : null,
-            'username' => $command->username ? encrypt($command->username) : null,
-            'password' => $command->password ? encrypt($command->password) : null,
-        ];
+        // Use first credential value as the api_key sentinel on delivery_companies.
+        // This satisfies the existing schema (single api_key column) without migration.
+        // Full carrier-specific credentials are stored in carrier_configurations.
+        $apiKeySentinel = array_values($command->credentials)[0] ?? null;
+
+        // Encrypt all credential values generically — no hardcoded key names.
+        $encryptedCredentials = array_map(
+            fn(string $value): string => encrypt($value),
+            $command->credentials,
+        );
 
         $this->companies->updateConnection(
             id: $command->deliveryCompanyId,
-            apiKey: encrypt($command->apiKey),
+            apiKey: $apiKeySentinel !== null ? encrypt($apiKeySentinel) : null,
             credentials: $encryptedCredentials,
             isActive: true,
         );
@@ -41,12 +45,7 @@ final class ConnectCarrierAction
             id: null,
             teamId: $command->teamId,
             deliveryCompanyId: $command->deliveryCompanyId,
-            credentials: [
-                'api_key' => $command->apiKey,
-                'api_secret' => $command->apiSecret,
-                'username' => $command->username,
-                'password' => $command->password,
-            ],
+            credentials: $command->credentials,
             fieldMapping: $command->fieldMapping ?? [],
             autoCreateParcel: false,
             webhookEnabled: false,

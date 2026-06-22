@@ -10,7 +10,7 @@ use RuntimeException;
 
 final class AmeexHttpClient implements CarrierHttpClient
 {
-    private const BASE_URL = 'https://api.ameex.example.com'; // TODO: confirm real base URL
+    private const BASE_URL = 'https://api.ameex.app'; 
 
     public function __construct(private readonly array $credentials) {}
 
