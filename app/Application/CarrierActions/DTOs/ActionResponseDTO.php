@@ -19,6 +19,11 @@ final class ActionResponseDTO
         public readonly string $testStatus,
         public readonly ?array $lastResponse = null,
         public readonly ?string $lastError = null,
+        public readonly int $requiredFields = 0,
+        public readonly int $configuredFields = 0,
+        public readonly array $missingFields = [],
+        public readonly int $completionPercent = 100,
+        public readonly bool $readyForAutoCreate = false,
     ) {}
 
     public function toArray(): array
@@ -37,6 +42,11 @@ final class ActionResponseDTO
             'test_status' => $this->testStatus,
             'last_response' => $this->lastResponse,
             'last_error' => $this->lastError,
+            'required_fields' => $this->requiredFields,
+            'configured_fields' => $this->configuredFields,
+            'missing_fields' => $this->missingFields,
+            'completion_percent' => $this->completionPercent,
+            'ready_for_auto_create' => $this->readyForAutoCreate,
         ];
     }
 }

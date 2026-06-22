@@ -19,6 +19,12 @@ final class CarrierHttpClientFactoryImpl implements CarrierHttpClientFactory
 
     private function credentialsFor($config): array
     {
-        return $config->credentials_json['createParcel'] ?? [];
+        $credentials = $config->credentials['createParcel'] ?? [];
+
+        if (empty($credentials) && $config->credentials) {
+            $credentials = $config->credentials;
+        }
+
+        return $credentials;
     }
 }

@@ -8,6 +8,7 @@ use App\Domain\CarrierActions\Contracts\CarrierActionDefinitionProvider;
 use App\Domain\CarrierActions\ValueObjects\ActionDefinition;
 use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
 use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;
+use Illuminate\Support\Facades\Crypt;
 
 final class GetCarrierActionsHandler
 {
@@ -43,7 +44,30 @@ final class GetCarrierActionsHandler
     {
         $savedAction = $mappingJson[$def->key] ?? [];
         $savedHidden = $savedAction['hidden'] ?? [];
+        $savedPrefilled = $savedAction['prefilled'] ?? [];
         $savedCredentialsRaw = $credentialsJson[$def->key] ?? [];
+
+        if (empty($savedCredentialsRaw) && $credentialsJson && $def->credentials) {
+            $savedCredentialsRaw = $credentialsJson;
+        }
+
+        $requiredFields = array_filter($def->fields, fn($f) => $f->required);
+        $configuredCount = 0;
+        $missing = [];
+        foreach ($requiredFields as $f) {
+            $hasValue = (
+                (isset($savedPrefilled[$f->key]) && $savedPrefilled[$f->key] !== '' && $savedPrefilled[$f->key] !== null)
+                || ($savedHidden[$f->key] ?? false)
+                || $f->default !== null
+            );
+            if ($hasValue) {
+                $configuredCount++;
+            } else {
+                $missing[] = $f->key;
+            }
+        }
+        $totalRequired = count($requiredFields);
+        $completionPercent = $totalRequired > 0 ? (int) round(($configuredCount / $totalRequired) * 100) : 100;
 
         return new ActionResponseDTO(
             key: $def->key,
@@ -55,8 +79,8 @@ final class GetCarrierActionsHandler
                 fn ($f) => $f->toArray($savedHidden[$f->key] ?? false),
                 $def->fields
             ),
-            savedCredentials: $this->maskCredentials($savedCredentialsRaw),
-            savedPrefilled: $savedAction['prefilled'] ?? [],
+            savedCredentials: $this->decryptCredentials($savedCredentialsRaw),
+            savedPrefilled: $savedPrefilled,
             savedHidden: $savedHidden,
             autoCreateEnabled: $def->supportsAutoCreate
                 ? (bool) ($config?->autoCreateParcel ?? false)
@@ -64,18 +88,31 @@ final class GetCarrierActionsHandler
             testStatus: $savedAction['test_status'] ?? 'pending',
             lastResponse: $savedAction['last_response'] ?? null,
             lastError: $savedAction['last_error'] ?? null,
+            requiredFields: $totalRequired,
+            configuredFields: $configuredCount,
+            missingFields: $missing,
+            completionPercent: $completionPercent,
+            readyForAutoCreate: $completionPercent === 100,
         );
     }
 
     /**
-     * Never return decrypted credential values to the frontend.
+     * Decrypt stored credential values so the frontend can display them.
      */
-    private function maskCredentials(array $raw): array
+    private function decryptCredentials(array $raw): array
     {
-        $masked = [];
+        $decrypted = [];
         foreach ($raw as $key => $value) {
-            $masked[$key] = $value ? '••••••••' : null;
+            if (is_string($value) && $value !== '') {
+                try {
+                    $decrypted[$key] = Crypt::decryptString($value);
+                } catch (\Throwable) {
+                    $decrypted[$key] = $value;
+                }
+            } else {
+                $decrypted[$key] = $value;
+            }
         }
-        return $masked;
+        return $decrypted;
     }
 }

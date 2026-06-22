@@ -20,8 +20,8 @@ final class AmeexActionDefinitions implements CarrierDefinitionSet
                 method: 'POST',
                 supportsAutoCreate: true,
                 credentials: [
-                    new CredentialDefinition('api_id', 'API ID', 'text', true),
-                    new CredentialDefinition('api_key', 'API Key', 'password', true),
+                    new CredentialDefinition('api_id', 'C-Api-Id', 'text', true),
+                    new CredentialDefinition('api_key', 'C-Api-Key', 'password', true),
                     new CredentialDefinition('secret_key', 'Secret Key', 'password', false),
                 ],
                 fields: [
@@ -41,33 +41,10 @@ final class AmeexActionDefinitions implements CarrierDefinitionSet
                 ],
             ),
             new ActionDefinition(
-                key: 'getCities',
-                label: 'Get Cities',
-                category: ActionDefinition::CATEGORY_PROVINCE_CITY,
-                method: 'GET',
-            ),
-            new ActionDefinition(
-                key: 'createProductCopy',
-                label: 'Create Product Copy',
-                category: ActionDefinition::CATEGORY_LOOKUP,
-                method: 'POST',
-                fields: [
-                    new FieldDefinition('ref', 'ref', 'text', true),
-                    new FieldDefinition('name', 'name', 'text', true),
-                    new FieldDefinition('api_id', 'Api ID', 'text', true),
-                ],
-            ),
-            new ActionDefinition(
                 key: 'status',
-                label: 'Status',
+                label: 'Test Connection',
                 category: ActionDefinition::CATEGORY_LOOKUP,
-                method: 'POST',
-            ),
-            new ActionDefinition(
-                key: 'webhook_ameex',
-                label: 'webhook_ameex',
-                category: ActionDefinition::CATEGORY_WEBHOOK,
-                method: 'WEBHOOK',
+                method: 'GET',
             ),
         ];
     }

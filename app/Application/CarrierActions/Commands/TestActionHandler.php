@@ -1,10 +1,10 @@
 <?php
-// app/Application/CarrierActions/Commands/TestActionHandler.php
 
 namespace App\Application\CarrierActions\Commands;
 
 use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;
 use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
+use App\Domain\Delivery\DeliveryCompany\Entities\CarrierConfiguration;
 use App\Domain\CarrierActions\Contracts\CarrierActionDefinitionProvider;
 use App\Infrastructure\Carriers\Contracts\CarrierHttpClientFactory;
 use Throwable;
@@ -20,8 +20,11 @@ final class TestActionHandler
 
     public function handle(TestActionCommand $command): array
     {
-        $company = $this->companyRepo->findOrFail($command->companyId);
-        $config = $this->configRepo->findOrCreateByTeamAndCompany($command->teamId, $company->id);
+        $company = $this->companyRepo->findById($command->companyId);
+        $config = $this->configRepo->findForTeamAndCarrier(
+            $command->teamId,
+            $company->id
+        );
 
         $actionDef = collect($this->definitions->definitionsFor($company->slug))
             ->firstWhere('key', $command->actionKey);
@@ -30,7 +33,7 @@ final class TestActionHandler
 
         $client = $this->clientFactory->forCarrier($company->slug, $config);
 
-        $mapping = $config->field_mapping_json ?? [];
+        $mapping = $config->fieldMapping;
         $actionMapping = $mapping[$command->actionKey] ?? [];
 
         try {
@@ -51,7 +54,18 @@ final class TestActionHandler
         }
 
         $mapping[$command->actionKey] = $actionMapping;
-        $this->configRepo->update($config->id, ['field_mapping_json' => $mapping]);
+
+        $updatedConfig = new CarrierConfiguration(
+            id: $config->id,
+            teamId: $config->teamId,
+            deliveryCompanyId: $config->deliveryCompanyId,
+            credentials: $config->credentials,
+            fieldMapping: $mapping,
+            autoCreateParcel: $config->autoCreateParcel,
+            webhookEnabled: $config->webhookEnabled,
+        );
+
+        $this->configRepo->save($updatedConfig);
 
         return $result;
     }

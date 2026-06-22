@@ -3,8 +3,9 @@
 
 namespace App\Application\CarrierActions\Commands;
 
-use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;;
+use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;
 use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
+use App\Domain\Delivery\DeliveryCompany\Entities\CarrierConfiguration;
 use App\Domain\CarrierActions\Contracts\CarrierActionDefinitionProvider;
 use App\Domain\CarrierActions\ValueObjects\ActionDefinition;
 use App\Infrastructure\Carriers\Contracts\CarrierHttpClientFactory;
@@ -21,11 +22,14 @@ final class RegisterWebhookHandler
 
     public function handle(RegisterWebhookCommand $command): array
     {
-        $company = $this->companyRepo->findOrFail($command->companyId);
-        $config = $this->configRepo->findOrCreateByTeamAndCompany($command->teamId, $company->id);
+        $company = $this->companyRepo->findById($command->companyId);
+        $config = $this->configRepo->findForTeamAndCarrier(
+            $command->teamId,
+            $company->id
+        );
 
         $webhookAction = collect($this->definitions->definitionsFor($company->slug))
-            ->first(fn (ActionDefinition $a) => $a->category === ActionDefinition::CATEGORY_WEBHOOK);
+            ->first(fn(ActionDefinition $a) => $a->category === ActionDefinition::CATEGORY_WEBHOOK);
 
         abort_unless($webhookAction, 404, 'No webhook action defined for carrier');
 
@@ -33,7 +37,7 @@ final class RegisterWebhookHandler
 
         $client = $this->clientFactory->forCarrier($company->slug, $config);
 
-        $mapping = $config->field_mapping_json ?? [];
+        $mapping = $config->fieldMapping;
         $webhookMapping = $mapping[$webhookAction->key] ?? [];
         $webhookMapping['url'] = $url;
 
@@ -51,10 +55,17 @@ final class RegisterWebhookHandler
 
         $mapping[$webhookAction->key] = $webhookMapping;
 
-        $this->configRepo->update($config->id, [
-            'field_mapping_json' => $mapping,
-            'webhook_enabled' => $webhookMapping['registered'] ?? false,
-        ]);
+        $updatedConfig = new CarrierConfiguration(
+            id: $config->id,
+            teamId: $config->teamId,
+            deliveryCompanyId: $config->deliveryCompanyId,
+            credentials: $config->credentials,
+            fieldMapping: $mapping,
+            autoCreateParcel: $config->autoCreateParcel,
+            webhookEnabled: $webhookMapping['registered'] ?? false,
+        );
+
+        $this->configRepo->save($updatedConfig);
 
         return $result;
     }
