@@ -20,8 +20,9 @@ final class AmeexActionDefinitions implements CarrierDefinitionSet
                 method: 'POST',
                 supportsAutoCreate: true,
                 credentials: [
-                    new CredentialDefinition('c_api_id', 'C-Api-Id', 'password', true),
-                    new CredentialDefinition('c_api_key', 'C-Api-Key', 'password', true),
+                    new CredentialDefinition('api_id', 'API ID', 'text', true),
+                    new CredentialDefinition('api_key', 'API Key', 'password', true),
+                    new CredentialDefinition('secret_key', 'Secret Key', 'password', false),
                 ],
                 fields: [
                     new FieldDefinition('api_id', 'Api-Id', 'text', true),

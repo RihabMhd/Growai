@@ -3,8 +3,8 @@
 
 namespace App\Application\CarrierActions\Commands;
 
-use App\Domain\Companies\Contracts\DeliveryCompanyRepositoryInterface;
-use App\Domain\Companies\Contracts\CarrierConfigurationRepositoryInterface;
+use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;;
+use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierConfigurationRepositoryInterface;
 use Illuminate\Support\Facades\Crypt;
 
 final class SaveActionConfigHandler
