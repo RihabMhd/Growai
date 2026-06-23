@@ -12,6 +12,7 @@ final class DashboardStats
         public readonly float  $revenue,
         public readonly float  $revenueGrowth,
         public readonly int    $confirmationRate,
+        public readonly int    $deliveryRate,
         public readonly ?float $avgConfirmationTime,
     ) {}
 
@@ -26,6 +27,7 @@ final class DashboardStats
             'revenue'               => $this->revenue,
             'revenue_growth'        => $this->revenueGrowth,
             'confirmation_rate'     => $this->confirmationRate,
+            'delivery_rate'         => $this->deliveryRate,
             'avg_confirmation_time' => $this->avgConfirmationTime,
         ];
     }
