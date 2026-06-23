@@ -15,6 +15,7 @@ final class ListOrdersQuery
         public readonly ?string $search,
         public readonly ?string $type,
         public readonly ?string $status,
+        public readonly ?bool $isAbandoned,
     ) {}
 
     public static function fromRequest(\Illuminate\Http\Request $request): self
@@ -25,6 +26,9 @@ final class ListOrdersQuery
             type:   $request->filled('type')   ? $request->input('type')   : null,
             status: $request->filled('status') && $request->input('status') !== 'all'
                         ? $request->input('status')
+                        : null,
+            isAbandoned: $request->has('is_abandoned')
+                        ? $request->boolean('is_abandoned')
                         : null,
         );
     }

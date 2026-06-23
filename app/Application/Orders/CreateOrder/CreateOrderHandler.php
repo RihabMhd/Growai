@@ -98,7 +98,7 @@ class CreateOrderHandler
             if ($command->city || $command->province || $command->street) {
                 $this->shipments->createForOrder($order, [
                     'delivery_company_id' => null,
-                    'status'              => 'pending',
+                    'status'              => 'label_created',
                     'recipient_name'      => $command->customerName,
                     'recipient_phone'     => $command->customerPhone,
                     'address'             => implode(', ', array_filter([

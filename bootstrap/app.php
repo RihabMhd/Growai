@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
 
         $middleware->remove(\Illuminate\Http\Middleware\FrameGuard::class);
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
 
 
         $middleware->alias([

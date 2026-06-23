@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\OrderStatus;
+use App\Domain\Orders\Models\OrderStatus;
 use Illuminate\Database\Seeder;
 
 class OrderStatusSeeder extends Seeder
@@ -14,6 +14,8 @@ class OrderStatusSeeder extends Seeder
             ['slug' => 'pending',            'name' => 'Nouveau',            'auto_send' => false],
             ['slug' => 'confirmed',          'name' => 'Confirmé',           'auto_send' => false],
             ['slug' => 'no_answer',          'name' => 'Pas de réponse',     'auto_send' => false],
+            ['slug' => 'abandoned',          'name' => 'AbandonnÃ©',          'auto_send' => false],
+            ['slug' => 'recovered',          'name' => 'RÃ©cupÃ©rÃ©',           'auto_send' => false],
             ['slug' => 'callback',           'name' => 'Rappel',             'auto_send' => false],
             ['slug' => 'cancelled',          'name' => 'Annulé',             'auto_send' => false],
             ['slug' => 'duplicate',          'name' => 'Doublon',            'auto_send' => false],

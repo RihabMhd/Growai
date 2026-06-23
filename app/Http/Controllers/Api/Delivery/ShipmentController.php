@@ -2,334 +2,161 @@
 
 namespace App\Http\Controllers\Api\Delivery;
 
+use App\Application\Delivery\Shipment\Actions\CancelShipmentAction;
+use App\Application\Delivery\Shipment\Actions\CreateShipmentAction;
+use App\Application\Delivery\Shipment\Actions\GetShipmentAction;
+use App\Application\Delivery\Shipment\Actions\GetShipmentTrackingAction;
+use App\Application\Delivery\Shipment\Actions\HandleCarrierWebhookAction;
+use App\Application\Delivery\Shipment\Actions\ListShipmentsAction;
+use App\Application\Delivery\Shipment\Actions\UpdateShipmentAction;
+use App\Application\Delivery\Shipment\Commands\CancelShipmentCommand;
+use App\Application\Delivery\Shipment\Commands\CreateShipmentCommand;
+use App\Application\Delivery\Shipment\Commands\HandleCarrierWebhookCommand;
+use App\Application\Delivery\Shipment\Commands\UpdateShipmentCommand;
+use App\Application\Delivery\Shipment\DTOs\CreateShipmentDTO;
+use App\Application\Delivery\Shipment\Queries\GetShipmentQuery;
+use App\Application\Delivery\Shipment\Queries\GetShipmentTrackingQuery;
+use App\Application\Delivery\Shipment\Queries\ListShipmentsQuery;
+use App\Domain\Delivery\DeliveryCompany\Exceptions\CarrierNotConnectedException;
+use App\Domain\Delivery\Shipment\Exceptions\ShipmentAlreadyExistsException;
+use App\Domain\Delivery\Shipment\Exceptions\ShipmentCannotBeCancelledException;
+use App\Domain\Delivery\Shipment\Exceptions\ShipmentNotFoundException;
 use App\Http\Controllers\Controller;
-use App\Domain\Orders\Models\Order;
-use App\Domain\Shipments\Models\Shipment;
-use App\Domain\Shipments\Models\DeliveryCompany;
+use App\Http\Requests\StoreShipmentRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
-class ShipmentController extends Controller
+final class ShipmentController extends Controller
 {
-    /**
-     * List shipments for an order or all shipments
-     */
-    public function index(Request $request)
+    public function __construct(
+        private readonly ListShipmentsAction $listShipments,
+        private readonly GetShipmentAction $getShipment,
+        private readonly CreateShipmentAction $createShipment,
+        private readonly UpdateShipmentAction $updateShipment,
+        private readonly CancelShipmentAction $cancelShipment,
+        private readonly GetShipmentTrackingAction $getTracking,
+        private readonly HandleCarrierWebhookAction $handleWebhook,
+    ) {}
+
+    public function index(Request $request): JsonResponse
     {
-        $query = Shipment::query()->with(['order', 'deliveryCompany']);
-
-        if ($request->filled('order_id')) {
-            $query->where('order_id', $request->input('order_id'));
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('delivery_company_id')) {
-            $query->where('delivery_company_id', $request->input('delivery_company_id'));
-        }
-
-        $shipments = $query->latest()->get();
+        $shipments = $this->listShipments->execute(ListShipmentsQuery::fromRequest($request));
 
         return response()->json(['shipments' => $shipments]);
     }
 
-    /**
-     * Show a specific shipment
-     */
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
-        $shipment = Shipment::with(['order', 'deliveryCompany'])->findOrFail($id);
-
-        return response()->json(['shipment' => $shipment]);
+        try {
+            return response()->json([
+                'shipment' => $this->getShipment->execute(new GetShipmentQuery((int) $id)),
+            ]);
+        } catch (ShipmentNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
     }
 
-    /**
-     * Create a parcel/shipment for an order
-     */
-    public function store(Request $request)
+    public function store(StoreShipmentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'delivery_company_id' => 'required|exists:delivery_companies,id',
-            'recipient_name' => 'nullable|string|max:255',
-            'recipient_phone' => 'nullable|string|max:30',
-            'address' => 'nullable|string',
-            'city' => 'nullable|string|max:100',
-            'region' => 'nullable|string|max:100',
-            'country' => 'nullable|string|max:5',
-            'cod_amount' => 'nullable|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
-            'dimensions' => 'nullable|array',
-            'dimensions.length' => 'nullable|numeric',
-            'dimensions.width' => 'nullable|numeric',
-            'dimensions.height' => 'nullable|numeric',
-        ]);
-
-        $order = Order::findOrFail($validated['order_id']);
-        $company = DeliveryCompany::findOrFail($validated['delivery_company_id']);
-
-        if (!$company->isConnected()) {
-            return response()->json([
-                'message' => 'Le transporteur n\'est pas connecté.',
-            ], 422);
-        }
-
-        // Check if shipment already exists for this order
-        $existingShipment = Shipment::where('order_id', $order->id)
-            ->where('delivery_company_id', $company->id)
-            ->where('status', '!=', 'failed')
-            ->first();
-
-        if ($existingShipment) {
-            return response()->json([
-                'message' => 'Un colis existe déjà pour cette commande avec ce transporteur.',
-                'shipment' => $existingShipment,
-            ], 422);
-        }
+        $validated = $request->validated();
 
         try {
-            $shipment = DB::transaction(function () use ($validated, $order, $company) {
-                // Use order's shipment details if not provided
-                $shipmentData = [
-                    'order_id' => $order->id,
-                    'delivery_company_id' => $company->id,
-                    'recipient_name' => $validated['recipient_name'] ?? $order->client->name,
-                    'recipient_phone' => $validated['recipient_phone'] ?? $order->client->phone,
-                    'address' => $validated['address'] ?? '',
-                    'city' => $validated['city'] ?? $order->client->city,
-                    'region' => $validated['region'] ?? $order->client->province,
-                    'country' => $validated['country'] ?? 'MA',
-                    'cod_amount' => $validated['cod_amount'] ?? ($order->total_price ?? 0),
-                    'status' => 'pending',
-                ];
-
-                // Create shipment in database
-                $shipment = Shipment::create($shipmentData);
-
-                // Send parcel creation request to carrier API
-                $trackingNumber = $company->createParcel(
-                    $shipment,
-                    $validated['weight'] ?? null,
-                    $validated['dimensions'] ?? null
-                );
-
-                if ($trackingNumber) {
-                    $shipment->update([
-                        'tracking_number' => $trackingNumber,
-                        'status' => 'picked_up',
-                    ]);
-
-                    // Update order shipment reference
-                    $order->update([
-                        'shipment_id' => $shipment->id,
-                    ]);
-                }
-
-                return $shipment;
-            });
+            $shipment = $this->createShipment->execute(new CreateShipmentCommand(
+                new CreateShipmentDTO(
+                    orderId: (int) $validated['order_id'],
+                    deliveryCompanyId: (int) $validated['delivery_company_id'],
+                    recipientName: $validated['recipient_name'] ?? null,
+                    recipientPhone: $validated['recipient_phone'] ?? null,
+                    address: $validated['address'] ?? null,
+                    city: $validated['city'] ?? null,
+                    region: $validated['region'] ?? null,
+                    country: $validated['country'] ?? null,
+                    codAmount: isset($validated['cod_amount']) ? (float) $validated['cod_amount'] : null,
+                    weight: isset($validated['weight']) ? (float) $validated['weight'] : null,
+                    dimensions: $validated['dimensions'] ?? null,
+                )
+            ));
 
             return response()->json([
-                'message' => 'Colis créé avec succès.',
+                'message' => 'Colis créé avec succès. Création chez le transporteur en cours.',
                 'shipment' => $shipment,
             ], 201);
-        } catch (\Exception $e) {
-            Log::error('Failed to create shipment', [
-                'order_id' => $order->id,
-                'company_id' => $company->id,
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (CarrierNotConnectedException|ShipmentAlreadyExistsException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Erreur lors de la création du colis: ' . $e->getMessage(),
             ], 422);
         }
     }
 
-    /**
-     * Update shipment (cancel, etc.)
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): JsonResponse
     {
-        $shipment = Shipment::findOrFail($id);
-
         $validated = $request->validate([
-            'status' => 'nullable|in:pending,picked_up,in_transit,out_for_delivery,delivered,returned,failed',
+            'status' => 'nullable|in:label_created,ready_for_pickup,picked_up,out_for_delivery,delivered,delayed,failure,returned',
             'delivery_notes' => 'nullable|string',
         ]);
 
-        $oldStatus = $shipment->status;
-        $shipment->update($validated);
+        try {
+            $shipment = $this->updateShipment->execute(new UpdateShipmentCommand(
+                shipmentId: (int) $id,
+                statusSlug: $validated['status'] ?? null,
+                deliveryNotes: $validated['delivery_notes'] ?? null,
+            ));
 
-        if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
-            Log::info('Shipment status updated', [
-                'shipment_id' => $shipment->id,
-                'old_status' => $oldStatus,
-                'new_status' => $validated['status'],
+            return response()->json([
+                'message' => 'Colis mis à jour avec succès.',
+                'shipment' => $shipment,
             ]);
+        } catch (ShipmentNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
         }
-
-        return response()->json([
-            'message' => 'Colis mis à jour avec succès.',
-            'shipment' => $shipment,
-        ]);
     }
 
-    /**
-     * Cancel a shipment
-     */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
-        $shipment = Shipment::findOrFail($id);
-
-        if (in_array($shipment->status, ['delivered', 'cancelled'])) {
-            return response()->json([
-                'message' => 'Ce colis ne peut pas être annulé.',
-            ], 422);
-        }
-
         try {
-            if ($shipment->deliveryCompany && $shipment->tracking_number) {
-                $shipment->deliveryCompany->cancelParcel($shipment);
-            }
-
-            $shipment->update(['status' => 'failed']);
+            $shipment = $this->cancelShipment->execute(new CancelShipmentCommand((int) $id));
 
             return response()->json([
                 'message' => 'Colis annulé avec succès.',
                 'shipment' => $shipment,
             ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to cancel shipment', [
-                'shipment_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (ShipmentNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ShipmentCannotBeCancelledException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Erreur lors de l\'annulation: ' . $e->getMessage(),
             ], 422);
         }
     }
 
-    /**
-     * Get tracking information from carrier
-     */
-    public function getTracking(string $id)
+    public function getTracking(string $id): JsonResponse
     {
-        $shipment = Shipment::findOrFail($id);
-
-        if (!$shipment->tracking_number) {
-            return response()->json([
-                'message' => 'Aucun numéro de suivi disponible.',
-            ], 422);
-        }
-
         try {
-            $tracking = $shipment->deliveryCompany->getTracking($shipment->tracking_number);
+            $tracking = $this->getTracking->execute(new GetShipmentTrackingQuery((int) $id));
 
-            return response()->json([
-                'shipment_id' => $shipment->id,
-                'tracking_number' => $shipment->tracking_number,
-                'tracking_info' => $tracking,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erreur lors de la récupération du suivi: ' . $e->getMessage(),
-            ], 422);
+            return response()->json($tracking);
+        } catch (ShipmentNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
     }
 
-    /**
-     * Webhook handler for carrier status updates
-     */
-    public function handleWebhook(Request $request)
+    public function handleWebhook(Request $request, string $companyId): JsonResponse
     {
-        $payload = $request->all();
-        $signature = $request->header('X-Signature');
+        $logId = $this->handleWebhook->execute(new HandleCarrierWebhookCommand(
+            deliveryCompanyId: (int) $companyId,
+            payload: $request->all(),
+            signature: $request->header('X-Signature'),
+        ));
 
-        Log::info('Received shipment webhook', $payload);
-
-        // Verify signature if provided
-        if ($signature && !$this->verifyWebhookSignature($payload, $signature)) {
-            Log::warning('Invalid webhook signature', ['payload' => $payload]);
-            return response()->json(['message' => 'Invalid signature'], 401);
-        }
-
-        try {
-            // Extract tracking number from payload
-            $trackingNumber = $payload['tracking_number'] ?? $payload['parcel_id'] ?? null;
-            $status = $payload['status'] ?? null;
-            $companyId = $payload['company_id'] ?? null;
-
-            if (!$trackingNumber || !$status) {
-                return response()->json(['message' => 'Missing required fields'], 422);
-            }
-
-            // Find shipment
-            $shipment = Shipment::where('tracking_number', $trackingNumber)
-                ->when($companyId, fn($q) => $q->where('delivery_company_id', $companyId))
-                ->first();
-
-            if (!$shipment) {
-                Log::warning('Shipment not found for webhook', ['tracking_number' => $trackingNumber]);
-                return response()->json(['message' => 'Shipment not found'], 404);
-            }
-
-            // Update shipment status
-            $oldStatus = $shipment->status;
-            $shipment->update([
-                'status' => $this->mapCarrierStatus($status),
-                'delivery_notes' => $payload['notes'] ?? null,
-            ]);
-
-            // Update timestamps based on status
-            if ($status === 'delivered' || $status === 'completed') {
-                $shipment->update(['delivered_at' => now()]);
-            } elseif ($status === 'picked_up') {
-                $shipment->update(['shipped_at' => now()]);
-            }
-
-            Log::info('Shipment status updated from webhook', [
-                'shipment_id' => $shipment->id,
-                'old_status' => $oldStatus,
-                'new_status' => $shipment->status,
-            ]);
-
-            return response()->json(['message' => 'Webhook processed successfully']);
-        } catch (\Exception $e) {
-            Log::error('Error processing shipment webhook', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error processing webhook'], 500);
-        }
-    }
-
-    /**
-     * Map carrier-specific status to standard status
-     */
-    private function mapCarrierStatus(string $carrierStatus): string
-    {
-        $statusMap = [
-            'pending' => 'pending',
-            'collected' => 'picked_up',
-            'picked_up' => 'picked_up',
-            'in_transit' => 'in_transit',
-            'out_for_delivery' => 'out_for_delivery',
-            'delivered' => 'delivered',
-            'completed' => 'delivered',
-            'returned' => 'returned',
-            'failed' => 'failed',
-            'cancelled' => 'failed',
-        ];
-
-        return $statusMap[strtolower($carrierStatus)] ?? $carrierStatus;
-    }
-
-    /**
-     * Verify webhook signature
-     */
-    private function verifyWebhookSignature(array $payload, string $signature): bool
-    {
-        return true;
+        return response()->json([
+            'message' => 'Webhook received and queued for processing.',
+            'webhook_log_id' => $logId,
+        ]);
     }
 }

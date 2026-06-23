@@ -13,6 +13,7 @@ use App\Application\Orders\CreateOrder\CreateOrderHandler;
 use App\Application\Orders\GetOrder\GetOrderHandler;
 use App\Application\Orders\ListOrders\ListOrdersQuery;
 use App\Application\Orders\ListOrders\ListOrdersHandler;
+use App\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler;
 use App\Application\Orders\SyncAbandonedOrders\SyncAbandonedOrdersHandler;
 use App\Application\Orders\UpdateOrder\UpdateOrderCommand;
 use App\Application\Orders\UpdateOrder\UpdateOrderHandler;
@@ -34,6 +35,7 @@ class OrderController extends Controller
         private readonly AssignOrderHandler           $assignOrder,
         private readonly BulkAssignOrdersHandler      $bulkAssignOrders,
         private readonly BulkUpdateOrderStatusHandler $bulkUpdateStatus,
+        private readonly RecoverAbandonedOrderHandler $recoverAbandonedOrder,
         private readonly SyncAbandonedOrdersHandler   $syncAbandoned,
     ) {}
 
@@ -58,7 +60,6 @@ class OrderController extends Controller
     // POST /orders
     // ─────────────────────────────────────────────────────────────────────────
 
-    // OrderController.php - store() method
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -72,14 +73,10 @@ class OrderController extends Controller
             'notes'          => 'nullable|string',
             'is_abandoned'   => 'nullable|boolean',
             'shipping_price' => 'nullable|numeric|min:0',
-            // Remove 'status' from validation - it should not be settable
             'items'          => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
         ]);
-
-        // Explicitly set status to 'nouveau' (new)
-        $validated['status'] = 'nouveau';
 
         $order = $this->createOrder->handle(
             CreateOrderCommand::fromArray($validated, $request->user()->id)
@@ -96,14 +93,7 @@ class OrderController extends Controller
     {
         $order = $this->getOrder->handle($id);
 
-        return response()->json(
-            new OrderResource(
-                $order->load([
-                    'histories.user:id,name',
-                    'assignedAgent:id,name',
-                ])
-            )
-        );
+        return response()->json(new OrderResource($order));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -160,6 +150,13 @@ class OrderController extends Controller
     // POST /orders/bulk-assign
     // ─────────────────────────────────────────────────────────────────────────
 
+    public function recover(Request $request, int|string $id): JsonResponse
+    {
+        $order = $this->recoverAbandonedOrder->handle($id, $request->user()->id);
+
+        return response()->json(new OrderResource($order));
+    }
+
     public function bulkAssign(Request $request): JsonResponse
     {
         $this->authorize('assign', \App\Domain\Orders\Models\Order::class);
@@ -172,8 +169,8 @@ class OrderController extends Controller
 
         $count = $this->bulkAssignOrders->handle(new BulkAssignOrdersCommand(
             orderIds: $validated['order_ids'],
-            agentId: $validated['agent_id'] ?? null,
-            actorId: $request->user()->id,
+            agentId:  $validated['agent_id'] ?? null,
+            actorId:  $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);
@@ -194,9 +191,9 @@ class OrderController extends Controller
         ]);
 
         $count = $this->bulkUpdateStatus->handle(new BulkUpdateOrderStatusCommand(
-            orderIds: $validated['order_ids'],
+            orderIds:  $validated['order_ids'],
             newStatus: $validated['status'],
-            actorId: $request->user()->id,
+            actorId:   $request->user()->id,
         ));
 
         return response()->json(['updated' => $count]);

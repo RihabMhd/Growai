@@ -11,7 +11,7 @@ use App\Domain\Orders\Models\OrderStatus;
 use App\Domain\Shopify\Models\Shop;
 use App\Domain\Teams\Models\User;
 use App\Domain\WhatsApp\Models\Message;
-use App\Domain\Shipments\Models\Shipment;
+use App\Infrastructure\Delivery\Persistence\Eloquent\Models\ShipmentModel;
 
 class Order extends Model
 {
@@ -108,7 +108,7 @@ class Order extends Model
 
     public function shipments()
     {
-        return $this->hasMany(Shipment::class);
+        return $this->hasMany(ShipmentModel::class);
     }
 
     public function messages()
