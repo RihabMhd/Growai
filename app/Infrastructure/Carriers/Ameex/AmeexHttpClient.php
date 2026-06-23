@@ -15,7 +15,11 @@ final class AmeexHttpClient implements CarrierHttpClient
     private const ENDPOINTS = [
         'createParcel' => '/customer/Delivery/Parcels/Action/Type/Add',
         'status' => '/customer/Delivery/Parcels/Statuts',
+        'getCities' => '/web/cities',
+        'createProductCopy' => '/customer/Delivery/Parcels/Products/Type/Add',
     ];
+
+    private const FORM_URLENCODED_ACTIONS = ['createProductCopy'];
 
     public function __construct(private readonly array $credentials) {}
 
@@ -26,10 +30,14 @@ final class AmeexHttpClient implements CarrierHttpClient
             'action' => $actionKey,
             'method' => $method,
             'url' => $url,
+            'payload' => $payload,
         ]);
 
-        $response = Http::withHeaders($this->authHeaders())
-            ->{strtolower($method)}($url, $payload);
+        $http = Http::withHeaders($this->authHeaders());
+        if (in_array($actionKey, self::FORM_URLENCODED_ACTIONS, true)) {
+            $http = $http->asForm();
+        }
+        $response = $http->{strtolower($method)}($url, $payload);
         Log::info('AMEEX RESPONSE', [
             'status' => $response->status(),
             'body' => $response->body(),
@@ -38,7 +46,15 @@ final class AmeexHttpClient implements CarrierHttpClient
             throw new RuntimeException("Ameex action [{$actionKey}] failed: " . $response->body());
         }
 
-        return $response->json() ?? [];
+        $responseData = $response->json() ?? [];
+        Log::info("AMEEX {$actionKey} RAW_RESPONSE", [
+            'status' => $response->status(),
+            'body' => $response->body(),
+            'decoded' => $responseData,
+            'type' => gettype($responseData),
+        ]);
+
+        return $this->normalizeResponse($actionKey, $responseData);
     }
 
     public function registerWebhook(string $url): array
@@ -74,5 +90,35 @@ final class AmeexHttpClient implements CarrierHttpClient
         } catch (\Throwable) {
             return $value;
         }
+    }
+
+    private function normalizeResponse(string $actionKey, array $data): array
+    {
+        if ($actionKey === 'createProductCopy') {
+            Log::info("AMEEX createProductCopy RESPONSE", $data);
+            return $data;
+        }
+
+        if ($actionKey !== 'getCities') {
+            return $data;
+        }
+
+        $rawCities = $data['cities'] ?? [];
+        $result = [];
+
+        foreach ($rawCities as $id => $city) {
+            if (! is_array($city)) {
+                continue;
+            }
+            $result[] = [
+                'id'   => (int) $id,
+                'ref'  => $city['ref'] ?? null,
+                'name' => $city['name'] ?? null,
+            ];
+        }
+
+        Log::info('AMEEX CITIES', $result);
+
+        return $result;
     }
 }

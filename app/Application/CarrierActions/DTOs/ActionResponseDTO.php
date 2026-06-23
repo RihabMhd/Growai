@@ -24,6 +24,7 @@ final class ActionResponseDTO
         public readonly array $missingFields = [],
         public readonly int $completionPercent = 100,
         public readonly bool $readyForAutoCreate = false,
+        public readonly bool $supportsApiRegistration = true,
     ) {}
 
     public function toArray(): array
@@ -47,6 +48,7 @@ final class ActionResponseDTO
             'missing_fields' => $this->missingFields,
             'completion_percent' => $this->completionPercent,
             'ready_for_auto_create' => $this->readyForAutoCreate,
+            'supports_api_registration' => $this->supportsApiRegistration,
         ];
     }
 }

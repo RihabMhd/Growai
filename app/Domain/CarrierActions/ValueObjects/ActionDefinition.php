@@ -22,5 +22,6 @@ final class ActionDefinition
         public readonly array $fields = [],
         public readonly array $credentials = [],
         public readonly bool $supportsAutoCreate = false,
+        public readonly bool $supportsApiRegistration = true,
     ) {}
 }

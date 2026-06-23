@@ -33,18 +33,23 @@ final class GetCarrierActionsHandler
         $mappingJson = $config?->fieldMapping ?? [];
 
         $definitions = $this->definitions->definitionsFor($company->slug);
+        $companyId = $company->id;
 
         return array_map(
-            fn (ActionDefinition $def) => $this->mapToDto($def, $credentialsJson, $mappingJson, $config),
+            fn (ActionDefinition $def) => $this->mapToDto($def, $credentialsJson, $mappingJson, $config, $companyId),
             $definitions
         );
     }
 
-    private function mapToDto(ActionDefinition $def, array $credentialsJson, array $mappingJson, $config): ActionResponseDTO
+    private function mapToDto(ActionDefinition $def, array $credentialsJson, array $mappingJson, $config, int $companyId): ActionResponseDTO
     {
         $savedAction = $mappingJson[$def->key] ?? [];
         $savedHidden = $savedAction['hidden'] ?? [];
         $savedPrefilled = $savedAction['prefilled'] ?? [];
+
+        if ($def->category === ActionDefinition::CATEGORY_WEBHOOK) {
+            $savedPrefilled['url'] = url("/api/shipments/webhook/{$companyId}");
+        }
         $savedCredentialsRaw = $credentialsJson[$def->key] ?? [];
 
         if (empty($savedCredentialsRaw) && $credentialsJson && $def->credentials) {
@@ -93,6 +98,7 @@ final class GetCarrierActionsHandler
             missingFields: $missing,
             completionPercent: $completionPercent,
             readyForAutoCreate: $completionPercent === 100,
+            supportsApiRegistration: $def->supportsApiRegistration,
         );
     }
 

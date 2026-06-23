@@ -42,9 +42,37 @@ final class AmeexActionDefinitions implements CarrierDefinitionSet
             ),
             new ActionDefinition(
                 key: 'status',
-                label: 'Test Connection',
+                label: 'Status',
                 category: ActionDefinition::CATEGORY_LOOKUP,
+                method: 'POST',
+            ),
+            new ActionDefinition(
+                key: 'createProductCopy',
+                label: 'Create Product Copy',
+                category: ActionDefinition::CATEGORY_LOOKUP,
+                method: 'POST',
+                credentials: [
+                    new CredentialDefinition('api_id', 'C-Api-Id', 'text', true),
+                    new CredentialDefinition('api_key', 'C-Api-Key', 'password', true),
+                ],
+                fields: [
+                    new FieldDefinition('ref', 'Ref', 'text', true),
+                    new FieldDefinition('name', 'Name', 'text', true),
+                    new FieldDefinition('api_id', 'Api-Id', 'text', true),
+                ],
+            ),
+            new ActionDefinition(
+                key: 'getCities',
+                label: 'Get Cities',
+                category: ActionDefinition::CATEGORY_PROVINCE_CITY,
                 method: 'GET',
+            ),
+            new ActionDefinition(
+                key: 'webhook_ameex',
+                label: 'webhook_ameex',
+                category: ActionDefinition::CATEGORY_WEBHOOK,
+                method: 'WEBHOOK',
+                supportsApiRegistration: false,
             ),
         ];
     }

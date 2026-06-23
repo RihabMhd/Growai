@@ -33,24 +33,31 @@ final class RegisterWebhookHandler
 
         abort_unless($webhookAction, 404, 'No webhook action defined for carrier');
 
-        $url = url("/api/webhooks/delivery/{$company->slug}");
-
-        $client = $this->clientFactory->forCarrier($company->slug, $config);
+        $url = url("/api/shipments/webhook/{$company->id}");
 
         $mapping = $config->fieldMapping;
         $webhookMapping = $mapping[$webhookAction->key] ?? [];
         $webhookMapping['url'] = $url;
 
-        try {
-            $response = $client->registerWebhook($url);
+        if (! $webhookAction->supportsApiRegistration) {
             $webhookMapping['registered'] = true;
-            $webhookMapping['last_response'] = $response;
+            $webhookMapping['last_response'] = null;
             $webhookMapping['last_error'] = null;
-            $result = ['ok' => true, 'url' => $url, 'response' => $response];
-        } catch (Throwable $e) {
-            $webhookMapping['registered'] = false;
-            $webhookMapping['last_error'] = $e->getMessage();
-            $result = ['ok' => false, 'url' => $url, 'error' => $e->getMessage()];
+            $result = ['ok' => true, 'url' => $url, 'manual' => true];
+        } else {
+            $client = $this->clientFactory->forCarrier($company->slug, $config);
+
+            try {
+                $response = $client->registerWebhook($url);
+                $webhookMapping['registered'] = true;
+                $webhookMapping['last_response'] = $response;
+                $webhookMapping['last_error'] = null;
+                $result = ['ok' => true, 'url' => $url, 'response' => $response];
+            } catch (Throwable $e) {
+                $webhookMapping['registered'] = false;
+                $webhookMapping['last_error'] = $e->getMessage();
+                $result = ['ok' => false, 'url' => $url, 'error' => $e->getMessage()];
+            }
         }
 
         $mapping[$webhookAction->key] = $webhookMapping;
