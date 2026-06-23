@@ -18,7 +18,7 @@ class DashboardController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'period' => 'sometimes|string|in:all_time,today,yesterday,last_7_days,last_30_days,this_month,last_month,last_90_days',
+            'period' => 'sometimes|string|in:all_time,today,yesterday,last_7_days,last_30_days,this_month,last_month,last_90_days,custom',
             'from'   => 'nullable|date',
             'to'     => 'nullable|date|after_or_equal:from',
         ]);

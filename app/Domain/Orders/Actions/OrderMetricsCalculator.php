@@ -18,12 +18,12 @@ class OrderMetricsCalculator
     /**
      * Statuses considered "confirmed" for the confirmation rate.
      */
-    private const CONFIRMED_STATUSES = ['confirmed', 'delivered', 'processing', 'shipped'];
+    public const CONFIRMED_STATUSES = ['confirmed', 'delivered', 'processing', 'shipped'];
 
     /**
      * Statuses considered "cancelled".
      */
-    private const CANCELLED_STATUSES = ['cancelled', 'returned'];
+    public const CANCELLED_STATUSES = ['cancelled', 'returned'];
 
     /**
      * @return array{
@@ -40,7 +40,7 @@ class OrderMetricsCalculator
         $confirmed = (clone $query)->whereIn('status', self::CONFIRMED_STATUSES)->count();
         $cancelled = (clone $query)->whereIn('status', self::CANCELLED_STATUSES)->count();
         $pending = (clone $query)
-            ->whereIn('status', ['nouveau', 'pending'])
+            ->whereIn('status', ['nouveau', 'pending', 'recovered'])
             ->count();
 
         $rate = $total > 0 ? round(($confirmed / $total) * 100) : 0;
