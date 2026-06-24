@@ -13,10 +13,7 @@ class SocialLoginHandler
         private readonly TokenServiceInterface $tokenService,
     ) {}
 
-    /**
-     * @throws InvalidCredentialsException
-     * @throws AccountDisabledException
-     */
+
     public function handle(SocialLoginCommand $command): array
     {
         $dto  = $command->socialUser;

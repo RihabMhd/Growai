@@ -8,6 +8,5 @@ interface ShipmentHistoryRepositoryInterface
 {
     public function record(ShipmentHistory $history): ShipmentHistory;
 
-    /** @return ShipmentHistory[] */
     public function findByShipmentId(int $shipmentId): array;
 }

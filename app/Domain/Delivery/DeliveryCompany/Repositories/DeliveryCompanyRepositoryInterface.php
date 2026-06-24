@@ -8,7 +8,6 @@ interface DeliveryCompanyRepositoryInterface
 {
     public function findById(int $id): ?DeliveryCompany;
 
-    /** @return DeliveryCompany[] */
     public function findAll(?bool $activeOnly = null): array;
 
     public function updateConnection(int $id, ?string $apiKey, ?array $credentials, bool $isActive): void;

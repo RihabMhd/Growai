@@ -13,22 +13,19 @@ final class GenerateCommissionHandler
         private readonly CommissionCalculator $calculator,
     ) {}
 
-    /**
-     * Returns credited amount, or 0.00 if no commission was due.
-     * Behavior preserved 1:1 from CommissionService::processForOrder().
-     */
+
     public function handle(GenerateCommissionCommand $command): float
     {
         $order = Order::findOrFail($command->orderId);
 
-        // Guard: no agent or already paid
+        // skip if no agent or already paid
         if (! $order->assigned_to || $order->commission_paid) {
             return 0.00;
         }
 
         $agent = User::find($order->assigned_to);
 
-        // Guard: agent must be staff and trigger status must match
+        // trigger status must match the agent rule
         if (! $this->shouldTrigger($agent, $command->newStatus)) {
             return 0.00;
         }
@@ -47,7 +44,7 @@ final class GenerateCommissionHandler
     private function shouldTrigger(?User $agent, string $newStatus): bool
     {
         return $agent
-            && $agent->role->value === 'staff'   // MemberRole enum — use ->value
+            && $agent->role->value === 'staff'
             && $agent->commission_trigger === $newStatus;
     }
 
@@ -57,7 +54,7 @@ final class GenerateCommissionHandler
 
         $order->updateQuietly(['commission_paid' => true]);
 
-        // Persist commission record for reversal support
+        // keep record to allow future reversals
         Commission::create([
             'order_id'       => $order->id,
             'user_id'        => $agent->id,

@@ -10,10 +10,6 @@ final class DeleteProductHandler
         private readonly ProductRepositoryInterface $repository,
     ) {}
 
-    /**
-     * Asserts shop ownership via findByIdAndShop before deletion.
-     * Throws ProductNotFoundException or ProductShopMismatchException on failure.
-     */
     public function handle(DeleteProductCommand $command): bool
     {
         $product = $this->repository->findByIdAndShop($command->productId, $command->shopId);

@@ -18,9 +18,7 @@ final class RecoveryRuleExecutor
         private readonly RecoveryPlaceholderRenderer $renderer,
     ) {}
 
-    /**
-     * @return array{rules:int, eligible:int, sent:int, skipped:int, failed:int}
-     */
+
     public function process(): array
     {
         $summary = ['rules' => 0, 'eligible' => 0, 'sent' => 0, 'skipped' => 0, 'failed' => 0];

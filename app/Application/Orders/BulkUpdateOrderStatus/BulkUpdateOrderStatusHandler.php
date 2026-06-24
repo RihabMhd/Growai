@@ -14,7 +14,6 @@ class BulkUpdateOrderStatusHandler
 
     public function handle(BulkUpdateOrderStatusCommand $command): int
     {
-        // bulkUpdateStatus returns only the orders whose status actually changed
         $changed = $this->orders->bulkUpdateStatus($command->orderIds, $command->newStatus);
 
         foreach ($changed as $order) {

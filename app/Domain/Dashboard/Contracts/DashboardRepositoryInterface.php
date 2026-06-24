@@ -15,10 +15,7 @@ interface DashboardRepositoryInterface
         ?int                      $teamId = null,
     ): array;
 
-    /**
-     * @param int[] $shopIds
-     * @return \Illuminate\Support\Collection<int, array>
-     */
+
     public function getShopsStats(
         DateRange                 $range,
         DashboardVisibilityPolicy $policy,

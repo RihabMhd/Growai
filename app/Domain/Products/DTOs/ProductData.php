@@ -6,10 +6,7 @@ use App\Domain\Products\DTOs\VariantData;
 
 final class ProductData
 {
-    /**
-     * @param VariantData[] $variants
-     * @param string[]      $tags
-     */
+
     public function __construct(
         public readonly int     $shopId,
         public readonly string  $title,
@@ -45,11 +42,7 @@ final class ProductData
         );
     }
 
-    /**
-     * Normalize tags from either a comma-delimited string, tags_string, or array.
-     *
-     * @return string[]
-     */
+
     private static function normalizeTags(array $data): array
     {
         if (isset($data['tags_string']) && is_string($data['tags_string'])) {
@@ -69,11 +62,7 @@ final class ProductData
         return [];
     }
 
-    /**
-     * Normalize variants — decode JSON string if needed, cast numeric fields.
-     *
-     * @return VariantData[]
-     */
+
     private static function normalizeVariants(mixed $variants): array
     {
         if (is_string($variants)) {

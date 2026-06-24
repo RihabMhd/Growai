@@ -23,11 +23,6 @@ class User extends Authenticatable
         return \Database\Factories\UserFactory::new();
     }
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'team_id',
         'name',
@@ -46,19 +41,12 @@ class User extends Authenticatable
         'two_factor_enabled',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
     protected $appends = [
         'avatar_url',
     ];
 
 
-    /**
-     * Get user avatar or fallback to a gorgeous illustration based on their name.
-     */
+    // get user avatar or fallback to an illustration
     public function getAvatarUrlAttribute()
     {
         if ($this->avatar) {
@@ -69,21 +57,11 @@ class User extends Authenticatable
 
 
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [

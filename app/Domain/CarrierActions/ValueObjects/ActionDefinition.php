@@ -1,5 +1,5 @@
 <?php
-// app/Domain/CarrierActions/ValueObjects/ActionDefinition.php
+
 
 namespace App\Domain\CarrierActions\ValueObjects;
 
@@ -10,15 +10,12 @@ final class ActionDefinition
     public const CATEGORY_LOOKUP = 'lookup';
     public const CATEGORY_WEBHOOK = 'webhook';
 
-    /**
-     * @param FieldDefinition[] $fields
-     * @param CredentialDefinition[] $credentials
-     */
+
     public function __construct(
         public readonly string $key,
         public readonly string $label,
         public readonly string $category,
-        public readonly string $method, // GET|POST|WEBHOOK
+        public readonly string $method,
         public readonly array $fields = [],
         public readonly array $credentials = [],
         public readonly bool $supportsAutoCreate = false,

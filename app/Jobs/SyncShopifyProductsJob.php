@@ -14,19 +14,10 @@ class SyncShopifyProductsJob implements ShouldQueue
 {
     use Queueable, InteractsWithQueue, SerializesModels;
 
-    /**
-     * Number of times the job may be attempted before failing.
-     */
     public int $tries = 3;
 
-    /**
-     * Wait (seconds) before retrying after a failure.
-     */
     public int $backoff = 60;
 
-    /**
-     * Maximum seconds the job can run before being killed.
-     */
     public int $timeout = 120;
 
     public function __construct(
@@ -40,7 +31,7 @@ class SyncShopifyProductsJob implements ShouldQueue
         try {
             $result = $shopifyService->syncProducts($this->shop);
 
-            // Record last sync timestamp on the shop
+            // record last sync timestamp on the shop
             $this->shop->update(['last_synced_at' => now()]);
 
             Log::info('Shopify product sync completed', [
@@ -55,14 +46,11 @@ class SyncShopifyProductsJob implements ShouldQueue
                 'error'   => $e->getMessage(),
             ]);
 
-            // Re-throw so the queue retries according to $tries / $backoff
+            // re-throw to trigger queue retries
             throw $e;
         }
     }
 
-    /**
-     * Called after all retries are exhausted.
-     */
     public function failed(\Throwable $exception): void
     {
         Log::error('SyncShopifyProductsJob permanently failed', [
@@ -70,6 +58,6 @@ class SyncShopifyProductsJob implements ShouldQueue
             'error'   => $exception->getMessage(),
         ]);
 
-        // Optional: notify via email / Slack here
+        // optional notification
     }
 }

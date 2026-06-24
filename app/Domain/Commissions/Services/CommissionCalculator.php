@@ -7,10 +7,7 @@ use App\Domain\Teams\Models\User;
 
 final class CommissionCalculator
 {
-    /**
-     * Calculate commission amount for an agent on an order.
-     * Returns 0.00 for unknown commission types.
-     */
+
     public function calculate(User $agent, Order $order): float
     {
         return match ($agent->commission_type) {

@@ -10,11 +10,7 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use App\Listeners\ProcessCommission;
 class EventServiceProvider extends ServiceProvider
 {
-    /**
-     * The event to listener mappings for the application.
-     *
-     * @var array<class-string, array<int, class-string>>
-     */
+
     protected $listen = [
         \App\Domain\Orders\Events\OrderStatusChanged::class => [
             ProcessCommission::class,
@@ -24,25 +20,18 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
         ],
         \App\Domain\Orders\Events\OrderCreated::class => [
-            // Add future listeners here (e.g. SendWelcomeEmail)
+            // add future listeners here
         ],
 
         \App\Domain\Orders\Events\OrderConfirmed::class => [
-            // Add future listeners here
+            // add future listeners here
         ],
     ];
 
-    /**
-     * Register any events for your application.
-     */
     public function boot(): void
     {
-        //
     }
 
-    /**
-     * Determine if events and listeners should be automatically discovered.
-     */
     public function shouldDiscoverEvents(): bool
     {
         return false;

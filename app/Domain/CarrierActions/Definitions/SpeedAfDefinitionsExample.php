@@ -1,6 +1,5 @@
 <?php
-// app/Domain/CarrierActions/Definitions/SpeedAfDefinitionsExample.php
-// Pattern reference for adding future carriers. Not registered by default.
+// use this pattern for adding new carriers
 
 namespace App\Domain\CarrierActions\Definitions;
 

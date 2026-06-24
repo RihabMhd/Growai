@@ -23,12 +23,10 @@ final class ConnectCarrierAction
             throw DeliveryCompanyNotFoundException::withId($command->deliveryCompanyId);
         }
 
-        // Use first credential value as the api_key sentinel on delivery_companies.
-        // This satisfies the existing schema (single api_key column) without migration.
-        // Full carrier-specific credentials are stored in carrier_configurations.
+        // use first credential as api_key sentinel to avoid schema migration
         $apiKeySentinel = array_values($command->credentials)[0] ?? null;
 
-        // Encrypt all credential values generically — no hardcoded key names.
+        // encrypt all generic credentials
         $encryptedCredentials = array_map(
             fn(string $value): string => encrypt($value),
             $command->credentials,

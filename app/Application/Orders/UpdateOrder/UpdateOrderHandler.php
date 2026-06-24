@@ -27,7 +27,6 @@ class UpdateOrderHandler
 
         DB::transaction(function () use ($command, $order) {
 
-            // 1. Update client if customer fields are provided
             if ($order->client && $this->hasClientData($command)) {
                 $clientData = [];
                 if (in_array('customer_name', $command->providedFields)) $clientData['name'] = $command->customerName;
@@ -42,14 +41,12 @@ class UpdateOrderHandler
                 }
             }
 
-            // 2. Replace items if a new items array was provided
             if ($command->items !== null) {
                 $subtotal = $this->itemsReplacer->replace($order, $command->items);
                 $shipping = $command->shippingPrice ?? $order->shipping_price;
                 $order->update(['total_price' => $subtotal + $shipping]);
             }
 
-            // 3. Update shipment address if address data changed
             if ($this->hasAddressData($command)) {
                 $shipmentData = [];
                 if (in_array('customer_name', $command->providedFields)) $shipmentData['recipient_name'] = $command->customerName;
@@ -57,7 +54,6 @@ class UpdateOrderHandler
                 if (in_array('city', $command->providedFields)) $shipmentData['city'] = $command->city;
                 if (in_array('province', $command->providedFields)) $shipmentData['region'] = $command->province;
                 
-                // Construct address string if any part changed
                 if (in_array('street', $command->providedFields) || in_array('city', $command->providedFields) || in_array('province', $command->providedFields)) {
                     $shipmentData['address'] = implode(', ', array_filter([
                         $command->street,
@@ -71,7 +67,6 @@ class UpdateOrderHandler
                 }
             }
 
-            // 4. Apply status transition via state machine
             $orderFields = [];
             if (in_array('financial_status', $command->providedFields)) $orderFields['financial_status'] = $command->financialStatus;
             if (in_array('notes', $command->providedFields)) $orderFields['notes'] = $command->notes;
@@ -83,7 +78,6 @@ class UpdateOrderHandler
             if (in_array('city', $command->providedFields)) $orderFields['city'] = $command->city;
             if (in_array('street', $command->providedFields)) $orderFields['street'] = $command->street;
             
-            // Also update shipping_address JSON
             if ($this->hasAddressData($command)) {
                 $shippingAddress = $order->shipping_address ?? [];
                 if (in_array('city', $command->providedFields)) $shippingAddress['city'] = $command->city;

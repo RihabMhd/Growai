@@ -15,10 +15,7 @@ class LoginHandler
         private readonly TokenServiceInterface $tokenService,
     ) {}
 
-    /**
-     * @throws InvalidCredentialsException
-     * @throws AccountDisabledException
-     */
+
     public function handle(LoginCommand $command): array
     {
         $user = User::where('email', $command->email)->first();

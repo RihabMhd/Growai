@@ -13,14 +13,7 @@ final class DuplicateProductHandler
         private readonly ProductRepositoryInterface $repository,
     ) {}
 
-    /**
-     * Duplicates a product within the same shop.
-     * - shop_id sourced from the original product — never from command input.
-     * - status forced to 'draft'.
-     * - source_type forced to 'manual' — the copy is not a Shopify product.
-     * - handle uniquified within the shop.
-     * - title suffixed with ' (Copy)'.
-     */
+    // force manual source type because copies are not shopify products
     public function handle(DuplicateProductCommand $command): Product
     {
         $source = $this->repository->findByIdAndShop($command->productId, $command->shopId);

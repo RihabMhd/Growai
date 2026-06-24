@@ -2,33 +2,22 @@
 
 namespace App\Application\Orders\UpdateOrder;
 
-/**
- * Immutable input DTO for the UpdateOrderHandler.
- * All fields are nullable — only non-null fields are applied.
- */
+
 final class UpdateOrderCommand
 {
     public function __construct(
         public readonly int|string $orderId,
         public readonly int        $actorId,
-
-        // Order fields
         public readonly ?string $status,
         public readonly ?string $financialStatus,
         public readonly ?string $notes,
         public readonly ?float  $shippingPrice,
-
-        // Client fields
         public readonly ?string $customerName,
         public readonly ?string $customerPhone,
         public readonly ?string $customerEmail,
-
-        // Address fields
         public readonly ?string $province,
         public readonly ?string $city,
         public readonly ?string $street,
-
-        // Items (null = no change)
         public readonly ?array  $items,
 
         public readonly array $providedFields = [],

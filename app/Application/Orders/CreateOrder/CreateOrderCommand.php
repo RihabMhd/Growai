@@ -2,33 +2,21 @@
 
 namespace App\Application\Orders\CreateOrder;
 
-/**
- * Immutable input DTO for the CreateOrderHandler.
- * Built from validated request data in OrderController::store().
- */
+
 final class CreateOrderCommand
 {
     public function __construct(
-        // Customer
         public readonly string  $customerName,
         public readonly string  $customerPhone,
         public readonly ?string $customerEmail,
-
-        // Address
         public readonly ?string $province,
         public readonly ?string $city,
         public readonly ?string $street,
-
-        // Order meta
         public readonly string  $source,
         public readonly ?string $notes,
         public readonly bool    $isAbandoned,
         public readonly float   $shippingPrice,
-
-        // Items: array<int, array{product_id: int, quantity: int}>
         public readonly array   $items,
-
-        // Actor
         public readonly int     $createdByUserId,
     ) {}
 

@@ -5,19 +5,7 @@ namespace App\Listeners;
 use App\Domain\Orders\Events\OrderStatusChanged;
 use App\Domain\Orders\Services\OrderAuditLogger;
 
-/**
- * Listens for OrderStatusChanged and writes an audit history entry.
- *
- * Replaces the inline OrderHistory::create() calls that were scattered
- * across OrderObserver::updated() and the controller methods.
- *
- * Registered in EventServiceProvider:
- *   OrderStatusChanged::class => [
- *       LogOrderHistory::class,
- *       ProcessCommission::class,
- *       SendWhatsappNotification::class,
- *   ]
- */
+// listens for orderstatuschanged and writes an audit history entry
 class LogOrderHistory
 {
     public function __construct(

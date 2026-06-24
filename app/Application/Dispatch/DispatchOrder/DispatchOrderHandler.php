@@ -13,10 +13,7 @@ final class DispatchOrderHandler
         private readonly DispatchEngine $engine,
     ) {}
 
-    /**
-     * Returns the assigned agent, or null if no eligible agent found.
-     * Caller is responsible for persisting assigned_to and audit logging.
-     */
+    // caller must persist assignment and audit log
     public function handle(DispatchOrderCommand $command): ?User
     {
         $team = Team::first();

@@ -25,9 +25,9 @@ final class CreateProductRequest extends FormRequest
             'images'       => 'nullable|array',
             'images.*'     => 'nullable|string|max:500',
             'cost'         => 'nullable|numeric|min:0',
-            'tags'         => 'nullable',        // string or array — normalized in ProductData::fromArray
+            'tags'         => 'nullable',        // normalized in product data
             'tags_string'  => 'nullable|string',
-            'variants'     => 'nullable',        // JSON string or array — normalized in ProductData::fromArray
+            'variants'     => 'nullable',        // normalized in product data
         ];
     }
 }

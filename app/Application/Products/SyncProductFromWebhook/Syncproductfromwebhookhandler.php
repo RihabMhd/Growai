@@ -13,17 +13,7 @@ final class SyncProductFromWebhookHandler
         private readonly ProductRepositoryInterface $repository,
     ) {}
 
-    /**
-     * This handler is the ONLY path that writes Shopify-sourced product data
-     * to the local database. UpdateProductHandler pushes to Shopify API and
-     * returns optimistically — this handler completes the write when Shopify
-     * fires the webhook.
-     *
-     * Handles three events:
-     *   products/create — upsert by shopify_product_id
-     *   products/update — upsert by shopify_product_id
-     *   products/delete — delete by shopify_product_id
-     */
+    // write product data when shopify fires the webhook
     public function handle(SyncProductFromWebhookCommand $command): ?Product
     {
         return match ($command->event) {
@@ -70,7 +60,7 @@ final class SyncProductFromWebhookHandler
                 'price'             => $v['price'] ?? 0,
                 'stock'             => $v['inventory_quantity'] ?? 0,
                 'compare_at_price'  => $v['compare_at_price'] ?? null,
-                'cost'              => null, // not in webhook payload
+                'cost'              => null, // cost is not provided in the webhook
                 'sku'               => $v['sku'] ?? null,
                 'title'             => $v['title'] ?? null,
                 'option1'           => $v['option1'] ?? null,
@@ -106,11 +96,6 @@ final class SyncProductFromWebhookHandler
         );
     }
 
-    /**
-     * Map Shopify product status to local status enum.
-     * Shopify: active | draft | archived
-     * Local:   active | draft | archived
-     */
     private function mapShopifyStatus(string $shopifyStatus): string
     {
         return match ($shopifyStatus) {

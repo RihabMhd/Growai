@@ -38,7 +38,7 @@ final class ShopifyProductMapper
                 'stock'                       => (int) ($variant['inventory_quantity'] ?? 0),
                 'compare_at_price'            => $variant['compare_at_price'] ?? null,
 
-                // NEW FIELDS
+
                 'external_variant_id'         => (string) ($variant['id'] ?? ''),
                 'external_inventory_item_id'  => (string) ($variant['inventory_item_id'] ?? ''),
             ];

@@ -15,16 +15,14 @@ class ClientController extends Controller
             $sort   = $request->get('sort',   'recent');
             $search = $request->get('search', '');
 
-            // ── Build base query with raw aggregates ──────────────────────────
-            // Uses raw DB subqueries so it works even if Order model or its
-            // relationships are not fully set up yet.
+            // uses raw db subqueries to decouple from order model relationships
             $query = Client::query()
                 ->select('clients.*')
                 ->selectRaw('(SELECT COUNT(*) FROM orders WHERE orders.client_id = clients.id) as orders_count')
                 ->selectRaw('(SELECT COALESCE(SUM(total_price),0) FROM orders WHERE orders.client_id = clients.id) as orders_total')
                 ->selectRaw('(SELECT created_at FROM orders WHERE orders.client_id = clients.id ORDER BY created_at DESC LIMIT 1) as last_order_at');
 
-            // ── Search ────────────────────────────────────────────────────────
+
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('clients.name',  'like', "%{$search}%")
@@ -34,7 +32,7 @@ class ClientController extends Controller
                 });
             }
 
-            // ── Sort ──────────────────────────────────────────────────────────
+
             match ($sort) {
                 'most_orders'  => $query->orderByDesc('orders_count'),
                 'top_spenders' => $query->orderByDesc('orders_total'),
@@ -67,7 +65,7 @@ class ClientController extends Controller
                 ];
             });
 
-            // ── Metrics (raw so no model dependency) ─────────────────────────
+            // raw metrics
             $totalClients = DB::table('clients')->count();
             $totalOrders  = DB::table('orders')->count();
             $totalRevenue = DB::table('orders')->sum('total_price');

@@ -1,5 +1,5 @@
 <?php
-// app/Application/CarrierActions/Queries/GetCarrierActionsQuery.php
+
 
 namespace App\Application\CarrierActions\Queries;
 

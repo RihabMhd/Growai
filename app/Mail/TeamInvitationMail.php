@@ -16,9 +16,6 @@ class TeamInvitationMail extends Mailable
     public $role;
     public $loginUrl;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct($name, $email, $password, $role, $loginUrl)
     {
         $this->name = $name;
@@ -28,9 +25,6 @@ class TeamInvitationMail extends Mailable
         $this->loginUrl = $loginUrl;
     }
 
-    /**
-     * Build the message.
-     */
     public function build()
     {
         return $this->subject('Invitation à rejoindre l\'équipe FlashManager')

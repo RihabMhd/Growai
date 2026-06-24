@@ -30,9 +30,7 @@ final class ProductController extends Controller
         private readonly DeleteProductHandler       $deleteHandler,
     ) {}
 
-    // -------------------------------------------------------------------------
-    // GET /api/shops/{shop}/products
-    // -------------------------------------------------------------------------
+
 
     public function index(ListProductsRequest $request, Shop $shop): JsonResponse
     {
@@ -42,9 +40,7 @@ final class ProductController extends Controller
         return response()->json($paginator);
     }
 
-    // -------------------------------------------------------------------------
-    // GET /api/shops/{shop}/products/summary
-    // -------------------------------------------------------------------------
+
 
     public function summary(Shop $shop): JsonResponse
     {
@@ -53,9 +49,7 @@ final class ProductController extends Controller
         return response()->json($summary->toArray());
     }
 
-    // -------------------------------------------------------------------------
-    // GET /api/shops/{shop}/products/{product}
-    // -------------------------------------------------------------------------
+
 
     public function show(Shop $shop, int $productId): JsonResponse
     {
@@ -64,9 +58,7 @@ final class ProductController extends Controller
         return response()->json($product);
     }
 
-    // -------------------------------------------------------------------------
-    // POST /api/shops/{shop}/products
-    // -------------------------------------------------------------------------
+
 
     public function store(CreateProductRequest $request, Shop $shop): JsonResponse
     {
@@ -79,9 +71,7 @@ final class ProductController extends Controller
         return response()->json($product, 201);
     }
 
-    // -------------------------------------------------------------------------
-    // PUT /api/shops/{shop}/products/{product}
-    // -------------------------------------------------------------------------
+
 
     public function update(UpdateProductRequest $request, Shop $shop, int $productId): JsonResponse
     {
@@ -96,9 +86,7 @@ final class ProductController extends Controller
         return response()->json($product);
     }
 
-    // -------------------------------------------------------------------------
-    // DELETE /api/shops/{shop}/products/{product}
-    // -------------------------------------------------------------------------
+
 
     public function destroy(Shop $shop, int $productId): JsonResponse
     {
@@ -109,9 +97,7 @@ final class ProductController extends Controller
         return response()->json(null, 204);
     }
 
-    // -------------------------------------------------------------------------
-    // POST /api/shops/{shop}/products/bulk-delete
-    // -------------------------------------------------------------------------
+
 
     public function bulkDestroy(BulkDeleteRequest $request, Shop $shop): JsonResponse
     {
@@ -123,9 +109,7 @@ final class ProductController extends Controller
         return response()->json(['deleted' => $deleted]);
     }
 
-    // -------------------------------------------------------------------------
-    // POST /api/shops/{shop}/products/bulk-status
-    // -------------------------------------------------------------------------
+
 
     public function bulkUpdateStatus(BulkUpdateStatusRequest $request, Shop $shop): JsonResponse
     {

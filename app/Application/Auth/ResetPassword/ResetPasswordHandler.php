@@ -20,10 +20,7 @@ class ResetPasswordHandler
         private readonly PasswordHasherInterface $passwordHasher,
     ) {}
 
-    /**
-     * @throws InvalidTokenException
-     * @throws TokenExpiredException
-     */
+
     public function handle(ResetPasswordCommand $command): void
     {
         $record = $this->tokenRepository->findByEmail($command->email);

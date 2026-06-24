@@ -38,11 +38,7 @@ class OrderStatusController extends Controller
         return response()->json(['message' => 'Order status deleted successfully']);
     }
 
-    /**
-     * Toggle (or explicitly set) auto_send for a status.
-     *
-     * Body: { auto_send: true|false }   (omit to flip current value)
-     */
+
     public function toggleAutoSend(Request $request, $id)
     {
         $orderStatus = OrderStatus::findOrFail($id);
@@ -56,20 +52,7 @@ class OrderStatusController extends Controller
         return response()->json($orderStatus);
     }
 
-    /**
-     * Persist multi-language WhatsApp templates and auto_send flag.
-     *
-     * Body:
-     * {
-     *   "templates":       { "FR": "...", "AR": "...", ... },
-     *   "auto_send":       true | false,          // optional
-     *   "whatsapp_message": "..."                 // optional legacy field
-     * }
-     *
-     * Route: PUT /order-statuses/{id}   (reuses existing update route)
-     *        or add a dedicated route:
-     *        POST /order-statuses/{id}/save-template
-     */
+
     public function saveTemplate(Request $request, $id)
     {
         $validated = $request->validate([

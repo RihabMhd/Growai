@@ -25,9 +25,7 @@ class Client extends Model
         'notes',
     ];
 
-    /**
-     * Relationship used by OrderController when loading orders with client.
-     */
+
     public function orders()
     {
         return $this->hasMany(Order::class, 'client_id');

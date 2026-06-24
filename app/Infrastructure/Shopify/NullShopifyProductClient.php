@@ -9,6 +9,6 @@ class NullShopifyProductClient implements ShopifyProductClientInterface
 {
     public function updateProduct(string $shopifyProductId, ProductData $data): void
     {
-        // TODO: implement real Shopify API push
+        // implement real shopify api push
     }
 }

@@ -4,10 +4,7 @@ namespace App\Application\Orders\ListOrders;
 
 use App\Domain\Teams\Models\User;
 
-/**
- * Immutable query DTO for the ListOrdersHandler.
- * Built from the HTTP request in OrderController::index().
- */
+
 final class ListOrdersQuery
 {
     public function __construct(

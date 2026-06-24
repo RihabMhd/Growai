@@ -6,15 +6,7 @@ use App\Domain\Orders\Models\Order;
 
 final class AbandonedOrderAnalyticsService
 {
-    /**
-     * @return array{
-     *   abandoned_orders:int,
-     *   recovered_orders:int,
-     *   recovery_rate:float,
-     *   lost_revenue:float,
-     *   recovered_revenue:float
-     * }
-     */
+
     public function calculate(
         DateRange $range,
         DashboardVisibilityPolicy $policy,
