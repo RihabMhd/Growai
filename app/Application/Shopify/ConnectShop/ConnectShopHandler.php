@@ -31,7 +31,7 @@ final readonly class ConnectShopHandler
 
         SyncProductsJob::dispatch($shop);
 
-        // SyncOrdersJob::dispatch($shop);
+
 
         return $shop;
     }

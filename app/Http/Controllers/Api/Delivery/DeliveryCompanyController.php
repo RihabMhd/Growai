@@ -75,23 +75,22 @@ final class DeliveryCompanyController extends Controller
             return response()->json(['message' => 'User is not assigned to a team.'], 422);
         }
 
-        // Resolve company to get slug — required for registry lookup.
+        // resolve company to get slug for registry lookup
         try {
             $company = $this->getCompany->execute((int) $id);
         } catch (DeliveryCompanyNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
         }
 
-        // Build validation rules from the carrier's MAIN_ACTION credential definitions.
-        // Falls back to accepting any string values if the carrier has no registry entry.
+        // build validation rules from the carrier's main action credential definitions
         try {
             $rules = $this->buildCredentialRules($company->slug);
         } catch (NotFoundHttpException) {
-            // Carrier not in registry — accept raw credentials without carrier-specific rules.
+            // carrier not in registry, accept raw credentials
             $rules = [];
         }
 
-        // Validate carrier-native credential keys against derived rules.
+
         try {
             $validated = $this->validateCredentials($request->all(), $rules);
         } catch (ValidationException $e) {
@@ -101,7 +100,7 @@ final class DeliveryCompanyController extends Controller
             ], 422);
         }
 
-        // Strip field_mapping from credentials; pass it separately.
+        // separate field mapping from credentials
         $fieldMapping = is_array($validated['field_mapping'] ?? null)
             ? $validated['field_mapping']
             : null;
@@ -258,14 +257,9 @@ final class DeliveryCompanyController extends Controller
         ]);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
 
-    /**
-     * Build Laravel validation rules from the MAIN_ACTION credential definitions
-     * registered for the given carrier slug.
-     *
-     * @return array<string, string>  e.g. ['c_api_id' => 'required|string', ...]
-     */
+
+    // build laravel validation rules from the main action credential definitions
     private function buildCredentialRules(string $slug): array
     {
         $definitions = $this->actionRegistry->definitionsFor($slug);
@@ -281,21 +275,17 @@ final class DeliveryCompanyController extends Controller
                 $rules[$cred->key] = $cred->required ? 'required|string' : 'nullable|string';
             }
 
-            break; // Only process the first MAIN_ACTION
+            break;
         }
 
         return $rules;
     }
 
-    /**
-     * Run validation and return only the credential keys (excludes field_mapping).
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+
     private function validateCredentials(array $input, array $rules): array
     {
         if (empty($rules)) {
-            // No registry entry — accept anything that is a non-empty string
+            // no registry entry, accept anything that is a non-empty string
             return array_filter($input, fn($v) => is_string($v) && $v !== '');
         }
 

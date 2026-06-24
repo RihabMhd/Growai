@@ -10,13 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 final readonly class ShopifyOrderImporter
 {
-    /**
-     * Bulk-import an array of raw Shopify order payloads.
-     *
-     * Used by manual sync. Mirrors ShopifyProductImporter::sync().
-     *
-     * @return array{success: bool, imported: int, updated: int, failed: int, total: int}
-     */
+
     public function sync(Shop $shop, array $orders): array
     {
         $imported = 0;
@@ -63,13 +57,7 @@ final readonly class ShopifyOrderImporter
         ];
     }
 
-    /**
-     * Upsert a single Shopify order from a raw payload.
-     *
-     * Single source of truth for Shopify → Order persistence.
-     * Called by both manual sync (via sync()) and webhooks
-     * (via OrderWebhookHandler).
-     */
+    // single source of truth for shopify order persistence
     public function upsert(Shop $shop, array $payload): Order
     {
         $customer        = $payload['customer'] ?? [];
@@ -115,27 +103,21 @@ final readonly class ShopifyOrderImporter
         return $order;
     }
 
-    /**
-     * Mark an order as cancelled by its Shopify ID.
-     */
+
     public function markCancelled(Shop $shop, string $externalOrderId): void
     {
         $this->findByExternalId($shop, $externalOrderId)
             ?->update(['status' => 'cancelled']);
     }
 
-    /**
-     * Mark an order as paid by its Shopify ID.
-     */
+
     public function markPaid(Shop $shop, string $externalOrderId): void
     {
         $this->findByExternalId($shop, $externalOrderId)
             ?->update(['financial_status' => 'paid']);
     }
 
-    /**
-     * Mark an order as fulfilled by its Shopify ID.
-     */
+
     public function markFulfilled(Shop $shop, string $externalOrderId): void
     {
         $this->findByExternalId($shop, $externalOrderId)

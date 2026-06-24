@@ -5,30 +5,15 @@ namespace App\Observers;
 use App\Domain\Orders\Events\OrderStatusChanged;
 use App\Domain\Orders\Models\Order;
 
-/**
- * Thin observer — only responsible for firing domain events.
- *
- * Auto-dispatch  → handled by AutoDispatchService called from CreateOrderHandler
- * History log    → handled by OrderAuditLogger called from handlers / listeners
- * Commission     → handled by ProcessCommission listener via OrderStatusChanged
- * WhatsApp       → handled by SendWhatsappNotification listener via OrderStatusChanged
- */
+// thin observer, only responsible for firing domain events
 class OrderObserver
 {
-    /**
-     * The created hook is intentionally empty.
-     * Auto-dispatch is triggered explicitly in CreateOrderHandler
-     * after the order is persisted, keeping causality traceable.
-     */
+    // auto-dispatch is triggered explicitly in createorderhandler
     public function created(Order $order): void
     {
-        //
     }
 
-    /**
-     * Fire OrderStatusChanged so all listeners react independently.
-     * Nothing else belongs here.
-     */
+    // fire orderstatuschanged so all listeners react independently
     public function updated(Order $order): void
     {
         logger()->info('ORDER UPDATED', [

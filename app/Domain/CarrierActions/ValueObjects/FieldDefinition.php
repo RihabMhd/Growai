@@ -1,5 +1,5 @@
 <?php
-// app/Domain/CarrierActions/ValueObjects/FieldDefinition.php
+
 
 namespace App\Domain\CarrierActions\ValueObjects;
 
@@ -8,10 +8,10 @@ final class FieldDefinition
     public function __construct(
         public readonly string $key,
         public readonly string $label,
-        public readonly string $type, // text|number|boolean|select|password
+        public readonly string $type,
         public readonly bool $required = false,
         public readonly mixed $default = null,
-        public readonly array $options = [], // only used for type=select
+        public readonly array $options = [],
     ) {}
 
     public function toArray(bool $hidden = false): array

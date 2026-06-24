@@ -10,6 +10,5 @@ interface ShipmentStatusRepositoryInterface
 
     public function findById(int $id): ?ShipmentStatus;
 
-    /** @return ShipmentStatus[] */
     public function all(): array;
 }

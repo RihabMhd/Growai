@@ -33,12 +33,11 @@ class Order extends Model
         });
     }
 
-    // Add to $fillable array in app/Domain/Orders/Models/Order.php
     protected $fillable = [
         'shop_id',
         'client_id',
         'assigned_to',
-        'external_order_id',      // ← new
+        'external_order_id',
         'order_number',
         'total_price',
         'shipping_price',
@@ -46,23 +45,22 @@ class Order extends Model
         'currency',
         'status',
         'financial_status',
-        'fulfillment_status',     // ← new
+        'fulfillment_status',
         'commission_paid',
         'is_abandoned',
         'abandoned_at',
         'notes',
         'source_channel',
-        'customer_name',          // ← new
-        'customer_email',         // ← new
-        'customer_phone',         // ← new
-        'shipping_address',       // ← new
-        'order_date',             // ← new
+        'customer_name',
+        'customer_email',
+        'customer_phone',
+        'shipping_address',
+        'order_date',
         'province',
         'city',
         'street',
     ];
 
-    // Add to $casts
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -72,8 +70,8 @@ class Order extends Model
         'total_price'      => 'float',
         'shipping_price'   => 'float',
         'discount'         => 'float',
-        'shipping_address' => 'array',   // ← new
-        'order_date'       => 'datetime', // ← new
+        'shipping_address' => 'array',
+        'order_date'       => 'datetime',
     ];
 
     public function client()

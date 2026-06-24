@@ -39,9 +39,7 @@ class OrderController extends Controller
         private readonly SyncAbandonedOrdersHandler   $syncAbandoned,
     ) {}
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET /orders
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function index(Request $request): JsonResponse
     {
@@ -56,9 +54,7 @@ class OrderController extends Controller
         ]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /orders
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function store(Request $request): JsonResponse
     {
@@ -85,9 +81,7 @@ class OrderController extends Controller
         return response()->json(new OrderResource($order), 201);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET /orders/{id}
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function show(int|string $id): JsonResponse
     {
@@ -96,9 +90,7 @@ class OrderController extends Controller
         return response()->json(new OrderResource($order));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PUT /orders/{id}
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function update(Request $request, int|string $id): JsonResponse
     {
@@ -125,9 +117,7 @@ class OrderController extends Controller
         return response()->json(new OrderResource($order));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /orders/{id}/assign
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function assign(Request $request, int|string $id): JsonResponse
     {
@@ -146,9 +136,7 @@ class OrderController extends Controller
         return response()->json(new OrderResource($order));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /orders/bulk-assign
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function recover(Request $request, int|string $id): JsonResponse
     {
@@ -176,9 +164,7 @@ class OrderController extends Controller
         return response()->json(['updated' => $count]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /orders/bulk-status
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function bulkUpdateStatus(Request $request): JsonResponse
     {
@@ -199,9 +185,7 @@ class OrderController extends Controller
         return response()->json(['updated' => $count]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /orders/sync-abandoned
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     public function syncAbandoned(): JsonResponse
     {

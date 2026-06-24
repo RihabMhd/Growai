@@ -1,5 +1,5 @@
 <?php
-// app/Application/CarrierActions/Queries/GetCarrierActionsHandler.php
+
 
 namespace App\Application\CarrierActions\Queries;
 
@@ -18,9 +18,7 @@ final class GetCarrierActionsHandler
         private readonly CarrierConfigurationRepositoryInterface $configRepo,
     ) {}
 
-    /**
-     * @return ActionResponseDTO[]
-     */
+
     public function handle(GetCarrierActionsQuery $query): array
     {
         $company = $this->companyRepo->findById($query->companyId);
@@ -102,9 +100,7 @@ final class GetCarrierActionsHandler
         );
     }
 
-    /**
-     * Decrypt stored credential values so the frontend can display them.
-     */
+    // decrypt credentials for frontend display
     private function decryptCredentials(array $raw): array
     {
         $decrypted = [];

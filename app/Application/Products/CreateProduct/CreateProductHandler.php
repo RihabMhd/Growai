@@ -20,10 +20,7 @@ final class CreateProductHandler
         return $this->repository->create($data);
     }
 
-    /**
-     * Derive and uniquify the handle within the shop.
-     * Immutable — returns a new ProductData instance with the resolved handle.
-     */
+    // create a unique handle for the shop
     private function resolveHandle(ProductData $data): ProductData
     {
         $base   = $data->handle ? Str::slug($data->handle) : Str::slug($data->title);
@@ -35,7 +32,6 @@ final class CreateProductHandler
             $counter++;
         }
 
-        // Return a new instance with the resolved handle — ProductData is readonly
         return new ProductData(
             shopId:      $data->shopId,
             title:       $data->title,

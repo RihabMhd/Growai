@@ -11,14 +11,8 @@ class SendWhatsappMessageJob implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Number of times the job may be attempted.
-     */
     public int $tries = 3;
 
-    /**
-     * Seconds to wait before retrying.
-     */
     public array $backoff = [30, 120, 300];
 
     public function __construct(
@@ -27,9 +21,6 @@ class SendWhatsappMessageJob implements ShouldQueue
         public readonly int    $orderId,
     ) {}
 
-    /**
-     * Execute the job — sends the WhatsApp message via Twilio.
-     */
     public function handle(WhatsAppService $whatsapp): void
     {
         $response = $whatsapp->send($this->phoneNumber, $this->message);
@@ -42,7 +33,7 @@ class SendWhatsappMessageJob implements ShouldQueue
                 'body'        => $response->body(),
             ]);
 
-            // Let Laravel retry the job
+            // let laravel retry the job
             $this->fail($response->body());
             return;
         }
@@ -54,9 +45,6 @@ class SendWhatsappMessageJob implements ShouldQueue
         ]);
     }
 
-    /**
-     * Handle a job failure (all retries exhausted).
-     */
     public function failed(\Throwable $e): void
     {
         Log::critical('WhatsApp job permanently failed', [

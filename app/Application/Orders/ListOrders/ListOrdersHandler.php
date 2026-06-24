@@ -17,13 +17,7 @@ class ListOrdersHandler
         private readonly OrderVisibilityResolver   $visibilityResolver,
     ) {}
 
-    /**
-     * @return array{
-     *   orders: \Illuminate\Database\Eloquent\Collection,
-     *   metrics: array,
-     *   active_agents: \Illuminate\Database\Eloquent\Collection|array
-     * }
-     */
+
     public function handle(ListOrdersQuery $query): array
     {
         $baseQuery = $this->buildFilteredQuery($query);
@@ -37,7 +31,7 @@ class ListOrdersHandler
         ];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     private function buildFilteredQuery(ListOrdersQuery $query): Builder
     {

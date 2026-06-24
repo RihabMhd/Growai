@@ -7,30 +7,14 @@ use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Models\OrderItem;
 use App\Domain\Products\Models\Product;
 
-/**
- * Replaces all existing items on an order with a new set,
- * then returns the new subtotal.
- *
- * Used by UpdateOrderHandler when the items array is present in the request.
- * Must be called inside an existing DB transaction.
- *
- * Usage:
- *   $subtotal = $replacer->replace($order, $validated['items']);
- *   $order->update(['total_price' => $subtotal + $order->shipping_price]);
- */
+
 class OrderItemsReplacer
 {
     public function __construct(
         private readonly ProductPriceResolver $priceResolver,
     ) {}
 
-    /**
-     * Delete old items, create new ones, return the new subtotal.
-     *
-     * @param  Order                                                    $order
-     * @param  array<int, array{product_id: int, quantity: int}>        $items
-     * @return float
-     */
+
     public function replace(Order $order, array $items): float
     {
         $order->items()->delete();

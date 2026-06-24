@@ -22,7 +22,7 @@ class ProcessCommission
         $order     = $event->order;
         $newStatus = $event->newStatus;
 
-        // Reversal on cancellation
+        // reversal on cancellation
         if ($newStatus === 'annule') {
             $reversed = $this->reverseHandler->handle(
                 new ReverseCommissionCommand($order->id)
@@ -50,7 +50,7 @@ class ProcessCommission
             return;
         }
 
-        // Generation on trigger status
+        // generation on trigger status
         $amount = $this->generateHandler->handle(
             new GenerateCommissionCommand(
                 orderId:   $order->id,

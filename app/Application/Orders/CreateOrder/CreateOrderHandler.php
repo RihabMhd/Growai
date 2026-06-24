@@ -28,12 +28,12 @@ class CreateOrderHandler
         private readonly OrderAuditLogger               $auditLogger,
         private readonly OrderNumberGenerator           $numberGenerator,
         private readonly ProductPriceResolver           $priceResolver,
-        private readonly DispatchOrderHandler           $dispatcher,   // ← replaces $autoDispatch
+        private readonly DispatchOrderHandler           $dispatcher,
     ) {}
 
     public function handle(CreateOrderCommand $command): Order
     {
-        // 1. Upsert client — outside transaction (read-heavy, idempotent)
+        // upsert client outside transaction because it is read-heavy and idempotent
         $client = $this->clients->upsertByPhone(
             phone: $command->customerPhone,
             name: $command->customerName,
@@ -43,14 +43,13 @@ class CreateOrderHandler
             street: $command->street,
         );
 
-        // 2. Resolve shop and order number before opening transaction
+        // resolve shop and order number before opening transaction to avoid locking issues
         $shop          = Shop::first();
         $orderNumber   = $this->numberGenerator->generate();
 
-        // 3. Persist order + items + shipment + source + history atomically
+        // persist order data atomically
         $order = DB::transaction(function () use ($command, $client, $shop, $orderNumber) {
 
-            // 3a. Create order
             $order = $this->orders->create([
                 'shop_id'          => $shop?->id,
                 'client_id'        => $client->id,
@@ -68,7 +67,6 @@ class CreateOrderHandler
                 'created_at'       => now(),
             ]);
 
-            // 3b. Create items and accumulate subtotal
             $subtotal = 0.00;
 
             foreach ($command->items as $itemData) {
@@ -88,13 +86,10 @@ class CreateOrderHandler
                 ]);
             }
 
-            // 3c. Set final total
             $order->update(['total_price' => $subtotal + $command->shippingPrice]);
 
-            // 3d. Record acquisition source
             $this->sources->recordForOrder($order, $command->source);
 
-            // 3e. Create shipment if address data is present
             if ($command->city || $command->province || $command->street) {
                 $this->shipments->createForOrder($order, [
                     'delivery_company_id' => null,
@@ -113,7 +108,6 @@ class CreateOrderHandler
                 ]);
             }
 
-            // 3f. Audit log — creation entry
             $this->auditLogger->log(
                 order: $order,
                 userId: $command->createdByUserId,
@@ -126,7 +120,7 @@ class CreateOrderHandler
             return $order;
         });
 
-        // 4. Auto-dispatch (outside transaction — failure must not roll back the order)
+        // auto-dispatch outside transaction so failures do not roll back the order
 
         $agent = $this->dispatcher->handle(new DispatchOrderCommand($order->id));
 
@@ -144,10 +138,8 @@ class CreateOrderHandler
             );
         }
 
-        // 5. Fire domain event for downstream listeners
         OrderCreated::dispatch($order);
 
-        // 6. Return with all relations loaded for the API response
         return $order->load(['items.product', 'client', 'assignedAgent']);
     }
 }

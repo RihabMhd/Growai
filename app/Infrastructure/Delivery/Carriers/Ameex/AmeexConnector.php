@@ -5,11 +5,7 @@ namespace App\Infrastructure\Delivery\Carriers\Ameex;
 use App\Infrastructure\Delivery\Carriers\Generic\AbstractCarrierConnector;
 use Illuminate\Support\Facades\Http;
 
-/**
- * Ameex carrier connector.
- *
- * Maps FlashManager parcel payload to Ameex API format.
- */
+
 final class AmeexConnector extends AbstractCarrierConnector
 {
     protected function authHeaders(): array

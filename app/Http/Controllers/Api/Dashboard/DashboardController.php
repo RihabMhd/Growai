@@ -1,5 +1,5 @@
 <?php
-// Http/Controllers/Api/Dashboard/DashboardController.php
+
 namespace App\Http\Controllers\Api\Dashboard;
 
 use App\Application\Dashboard\GetDashboard\GetDashboardHandler;
@@ -22,7 +22,7 @@ class DashboardController extends Controller
             'from'   => 'nullable|date',
             'to'     => 'nullable|date|after_or_equal:from',
         ]);
-        /** @var \App\Domain\Teams\Models\User $user */
+        // @var \App\Domain\Teams\Models\User $user
         $user = Auth::user();
 
         $result = $this->handler->handle(new GetDashboardQuery(

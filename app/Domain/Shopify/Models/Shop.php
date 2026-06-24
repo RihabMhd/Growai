@@ -28,7 +28,7 @@ class Shop extends Model
         'last_synced_at' => 'datetime',
     ];
 
-    // Never expose the raw access token or webhook secret in JSON responses
+    // prevent exposing sensitive tokens in json responses
     protected $hidden = [
         'access_token',
         'webhook_secret',

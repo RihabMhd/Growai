@@ -75,7 +75,7 @@ final readonly class ShopifyProductImporter
             ->where('external_product_id', $dto->id)
             ->first();
 
-        // For existing products, preserve local stock during re-sync
+        // for existing products, preserve local stock during re-sync
         $variants = $existing
             ? $this->mergeVariants($existing->variants ?? [], $dto->variants)
             : $dto->variants;
@@ -129,10 +129,7 @@ final readonly class ShopifyProductImporter
             ->where('external_product_id', $dto->id)
             ->tap(function ($query) use ($dto, $shop) {
 
-                // Build variants preserving local stock — only update
-                // Shopify metadata fields (id, sku, title, price, options).
-                // Stock is authoritative in GrowAI and synced via
-                // inventory_levels/set; never overwrite from products/update.
+                // build variants preserving local stock, only update shopify metadata fields
                 $existing = Product::where('shop_id', $shop->id)
                     ->where('external_product_id', $dto->id)
                     ->first();
@@ -157,18 +154,10 @@ final readonly class ShopifyProductImporter
             ->first();
     }
 
-    /**
-     * Merge incoming Shopify variant metadata with locally-held stock values.
-     * Shopify is authoritative for: external_variant_id, external_inventory_item_id,
-     *   price, sku, title, options.
-     * GrowAI is authoritative for: stock.
-     *
-     * @param array $storedVariants  Current DB variants (have local stock)
-     * @param array $incomingVariants From Shopify webhook (have stale stock)
-     */
+    // merge incoming shopify variant metadata with locally-held stock values
     private function mergeVariants(array $storedVariants, array $incomingVariants): array
     {
-        // Index stored variants by external_variant_id for O(1) lookup
+        // index stored variants by external variant id
         $storedByVariantId = collect($storedVariants)
             ->filter(fn($v) => !empty($v['external_variant_id']))
             ->keyBy('external_variant_id');
@@ -178,7 +167,7 @@ final readonly class ShopifyProductImporter
             $stored    = $storedByVariantId->get($variantId);
 
             return [
-                // Shopify metadata — always take from webhook
+                // shopify metadata, always take from webhook
                 'external_variant_id'         => $incoming['external_variant_id'] ?? null,
                 'external_inventory_item_id'  => $incoming['external_inventory_item_id'] ?? null,
                 'shopify_variant_id'          => $incoming['shopify_variant_id'] ?? null,
@@ -190,7 +179,7 @@ final readonly class ShopifyProductImporter
                 'option2'                     => $incoming['option2'] ?? null,
                 'option3'                     => $incoming['option3'] ?? null,
                 'cost'                        => $stored['cost'] ?? null,
-                // GrowAI is authoritative for stock — never overwrite from webhook
+                // stock is authoritative, never overwrite from webhook
                 'stock'                       => $stored['stock'] ?? $incoming['stock'] ?? 0,
             ];
         }, $incomingVariants);

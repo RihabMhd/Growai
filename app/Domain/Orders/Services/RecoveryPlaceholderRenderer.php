@@ -6,10 +6,7 @@ use App\Domain\Orders\Models\Order;
 
 final class RecoveryPlaceholderRenderer
 {
-    /**
-     * @param string[] $values
-     * @return string[]
-     */
+
     public function renderMany(array $values, Order $order): array
     {
         return array_map(fn (string $value) => $this->render($value, $order), $values);

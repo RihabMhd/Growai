@@ -1,5 +1,5 @@
 <?php
-// app/Application/CarrierActions/Commands/RegisterWebhookCommand.php
+
 
 namespace App\Application\CarrierActions\Commands;
 

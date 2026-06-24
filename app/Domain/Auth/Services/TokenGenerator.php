@@ -4,10 +4,5 @@ namespace Domain\Auth\Services;
 
 use Domain\Auth\Services\Interfaces\TokenGeneratorInterface;
 
-/**
- * Domain-level token generator.
- * The concrete implementation is bound in Infrastructure.
- *
- * @see \Infrastructure\Auth\ResetTokenStorage\LaravelTokenGenerator
- */
+// bind interface in infrastructure to keep domain clean
 abstract class TokenGenerator implements TokenGeneratorInterface {}

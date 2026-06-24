@@ -10,11 +10,7 @@ final class BulkUpdateStatusHandler
         private readonly ProductRepositoryInterface $repository,
     ) {}
 
-    /**
-     * Updates status on products scoped strictly to the given shop.
-     * Products belonging to other shops are excluded at query level.
-     * Returns count of updated records.
-     */
+    // products belonging to another shop are silently ignored
     public function handle(BulkUpdateStatusCommand $command): int
     {
         if (empty($command->ids)) {

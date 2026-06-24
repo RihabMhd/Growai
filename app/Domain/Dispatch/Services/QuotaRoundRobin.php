@@ -7,21 +7,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Domain\Teams\Models\Team;
 
-/**
- * Persistent quota-based round-robin using a single team-level cursor.
- *
- * Algorithm:
- *   1. Sort eligible agents by id (stable, deterministic order).
- *   2. Build the expanded slot sequence: [A,A,A,A,A,B,B,B,C,C]
- *      sequence_length = sum of quotas.
- *   3. position = cursor % sequence_length
- *   4. Walk the sequence to find which agent owns `position`.
- *   5. Increment cursor and persist.
- *
- * Quota/roster changes take effect on the next dispatch naturally:
- * the sequence is rebuilt from live data each time. The cursor keeps
- * incrementing; mod arithmetic absorbs the change without a hard reset.
- */
+// persistent quota-based round-robin dispatch
+// sequence rebuilds dynamically so quota changes apply immediately
 final class QuotaRoundRobin
 {
     public function select(Collection $agents): ?User
@@ -94,16 +81,6 @@ final class QuotaRoundRobin
         );
     }
 
-    // -------------------------------------------------------------------------
-
-    /**
-     * Walk the sorted agent list, consuming quota-sized slots, until
-     * the slot at $position is owned by an agent.
-     *
-     * Example: agents=[A(q=5), B(q=3), C(q=2)], position=6
-     *   offset=0: A owns slots 0-4, 6 >= 5 → offset=5
-     *   offset=5: B owns slots 5-7, 6 < 8  → return B
-     */
     private function resolveAgent(Collection $sorted, int $position): ?User
     {
         $offset = 0;
@@ -115,7 +92,7 @@ final class QuotaRoundRobin
             }
         }
 
-        // Unreachable if position < sequenceLength, but defensive fallback.
+        // fallback if position is out of bounds
         return $sorted->first();
     }
 }

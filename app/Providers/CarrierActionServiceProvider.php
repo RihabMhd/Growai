@@ -1,6 +1,5 @@
 <?php
-// app/Providers/CarrierActionServiceProvider.php
-// Bind the interface — register in config/app.php providers array.
+// bind the interface, register in config/app.php providers array
 
 namespace App\Providers;
 

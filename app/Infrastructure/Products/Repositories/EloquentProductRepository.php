@@ -16,9 +16,6 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentProductRepository implements ProductRepositoryInterface
 {
-    // -------------------------------------------------------------------------
-    // Single-record reads
-    // -------------------------------------------------------------------------
 
     public function findById(int $id): ?Product
     {
@@ -64,9 +61,6 @@ final class EloquentProductRepository implements ProductRepositoryInterface
         return $query->exists();
     }
 
-    // -------------------------------------------------------------------------
-    // Multi-record reads
-    // -------------------------------------------------------------------------
 
     public function findAllByShop(int $shopId, ProductFilterData $filters): LengthAwarePaginator
     {
@@ -87,13 +81,11 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             })
             ->when($filters->tag, fn($q) => $q->whereJsonContains('products.tags', $filters->tag))
             ->when($filters->minPrice !== null, function ($q) use ($filters) {
-                // JSON_EXTRACT works on MySQL; adjust for your DB if needed
                 $q->whereRaw(
                     "JSON_EXTRACT(variants, '$[*].price') IS NOT NULL"
                 )->whereRaw(
                     "JSON_CONTAINS(variants, JSON_OBJECT('price', CAST(? AS DECIMAL(10,2))))",
-                    // This is approximate — JSON price range queries are imprecise in pure SQL
-                    // Recommend filtering post-query in PHP if precision is required
+                    // json price range queries are approximate in pure sql
                     [$filters->minPrice]
                 );
             })
@@ -166,9 +158,6 @@ final class EloquentProductRepository implements ProductRepositoryInterface
         return ProductSummaryData::fromArray((array) $row);
     }
 
-    // -------------------------------------------------------------------------
-    // Writes
-    // -------------------------------------------------------------------------
 
     public function save(Product $product): Product
     {
@@ -179,7 +168,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function create(ProductData $data): Product
     {
-        /** @var Product $product */
+        // @var Product $product
         $product = Product::create([
             'shop_id'      => $data->shopId,
             'title'        => $data->title,
@@ -209,7 +198,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
                 $row = $incoming->toArray();
 
-                // Never overwrite Shopify identifiers with null
+                // never overwrite shopify identifiers with null
                 $row['external_variant_id'] = $incoming->externalVariantId
                     ?? $stored['external_variant_id']
                     ?? null;
@@ -218,7 +207,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
                     ?? $stored['external_inventory_item_id']
                     ?? null;
 
-                // Preserve shopify_variant_id too
+                // preserve shopify variant id
                 $row['shopify_variant_id'] = $incoming->shopifyVariantId
                     ?? $stored['shopify_variant_id']
                     ?? null;
@@ -252,9 +241,6 @@ final class EloquentProductRepository implements ProductRepositoryInterface
         return (bool) $product->delete();
     }
 
-    // -------------------------------------------------------------------------
-    // Bulk operations — always shop-scoped
-    // -------------------------------------------------------------------------
 
     public function bulkDeleteByShop(array $ids, int $shopId): int
     {
@@ -270,15 +256,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             ->update(['status' => $status]);
     }
 
-    // -------------------------------------------------------------------------
-    // Internals
-    // -------------------------------------------------------------------------
 
-    /**
-     * Replace all variants for a product (delete-and-recreate).
-     *
-     * @param VariantData[] $variants
-     */
+    // replace all variants
     private function syncVariants(Product $product, array $variants): void
     {
         $product->update([

@@ -45,14 +45,7 @@ final class ShopifyController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * POST /api/shopify/shops/{shop}/sync-products
-     *
-     * Laravel resolves {shop} via route model binding.
-     * We then verify the shop belongs to the authenticated user's team
-     * before dispatching the sync job. No query-param fallback. No
-     * defaulting to any shop in the database.
-     */
+    // verify the shop belongs to the authenticated user's team before dispatching the sync job
     public function syncProducts(
         Request $request,
         Shop $shop,
@@ -157,20 +150,9 @@ final class ShopifyController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
-    /**
-     * Verify the resolved shop belongs to the authenticated user's team.
-     *
-     * The shops table carries a nullable team_id foreign key. If your auth
-     * model uses a different ownership column (e.g. user_id), swap the
-     * comparison below. The important invariant: we never trust a client-
-     * supplied shop identifier without verifying ownership server-side.
-     *
-     * @throws AccessDeniedHttpException
-     */
+
+    // verify the resolved shop belongs to the authenticated user's team
 
     private function authorizeShopAccess(Request $request, Shop $shop): void
     {

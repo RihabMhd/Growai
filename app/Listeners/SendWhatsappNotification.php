@@ -15,18 +15,12 @@ class SendWhatsappNotification implements ShouldQueue
 {
     use InteractsWithQueue;
 
-    /**
-     * Handle the event — dispatches a queued job to send the WhatsApp message.
-     */
     public function handle(OrderStatusChanged $event): void
     {
         $order     = $event->order;
         $newStatus = $event->newStatus;
 
-        // ── Duplicate guard ───────────────────────────────────────────────────
-        // Prevents sending twice if the listener is accidentally fired more
-        // than once for the same order + status (e.g. sync driver quirk,
-        // double event dispatch, etc.).
+        // prevents duplicate sending if the listener is accidentally fired multiple times
         $lockKey = "whatsapp_lock_{$order->id}_{$newStatus}";
 
         if (!Cache::add($lockKey, true, now()->addSeconds(30))) {
@@ -38,7 +32,7 @@ class SendWhatsappNotification implements ShouldQueue
         }
 
         try {
-            // 1. Look up the OrderStatus record and check the auto_send flag
+            // check if auto_send is enabled for the status
             $status = OrderStatus::where('slug', $newStatus)->first();
 
             if (!$status || !$status->auto_send) {
@@ -49,7 +43,7 @@ class SendWhatsappNotification implements ShouldQueue
                 return;
             }
 
-            // 2. Resolve the template for the team's preferred language
+            // resolve the template for the team's preferred language
             $message     = $this->resolveMessage($status, $order);
             $phoneNumber = $order->client?->phone;
 
@@ -62,7 +56,7 @@ class SendWhatsappNotification implements ShouldQueue
                 return;
             }
 
-            // 3. Dispatch a queued job (retries are handled there)
+            // dispatch a queued job for retry handling
             SendWhatsappMessageJob::dispatch($phoneNumber, $message, $order->id);
 
             Log::info('WhatsApp job dispatched', [
@@ -80,7 +74,7 @@ class SendWhatsappNotification implements ShouldQueue
         }
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+
 
     private function resolveMessage(OrderStatus $status, object $order): string
     {
@@ -89,7 +83,7 @@ class SendWhatsappNotification implements ShouldQueue
         $team = Team::first();
         $lang = $team?->whatsapp_language ?? 'FR';
 
-        // Priority: team language → FR → legacy single field
+        // priority: team language, fallback to fr, then legacy field
         $template = $templates[$lang]
             ?? $templates['FR']
             ?? $status->whatsapp_message

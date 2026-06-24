@@ -8,7 +8,8 @@ final class SaveActionConfigRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // team/auth scoping is enforced in the handler via team_id
+        // team scoping enforced via team id
+        return true;
     }
 
     public function rules(): array

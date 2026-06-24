@@ -12,7 +12,6 @@ interface ShipmentRepositoryInterface
 
     public function findActiveForOrderAndCarrier(int $orderId, int $deliveryCompanyId): ?Shipment;
 
-    /** @return Shipment[] */
     public function findByFilters(?int $orderId, ?string $statusSlug, ?int $deliveryCompanyId): array;
 
     public function save(Shipment $shipment): Shipment;

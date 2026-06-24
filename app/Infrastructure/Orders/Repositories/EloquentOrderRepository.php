@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class EloquentOrderRepository implements OrderRepositoryInterface
 {
-    /**
-     * Standard eager-load set used across listing and detail views.
-     */
+    // standard eager load set
     private const BASE_RELATIONS = [
         'items.product',
         'client',
@@ -30,9 +28,6 @@ class EloquentOrderRepository implements OrderRepositoryInterface
         'sources',
     ];
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Queries
-    // ─────────────────────────────────────────────────────────────────────────
 
     public function baseQuery(): Builder
     {
@@ -46,9 +41,6 @@ class EloquentOrderRepository implements OrderRepositoryInterface
         return Order::with(self::DETAIL_RELATIONS)->findOrFail($id);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Writes
-    // ─────────────────────────────────────────────────────────────────────────
 
     public function create(array $data): Order
     {
@@ -67,9 +59,6 @@ class EloquentOrderRepository implements OrderRepositoryInterface
         $order->updateQuietly(['assigned_to' => $agentId]);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Bulk operations
-    // ─────────────────────────────────────────────────────────────────────────
 
     public function bulkAssign(array $orderIds, ?int $agentId): Collection
     {

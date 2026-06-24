@@ -7,12 +7,12 @@ use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Orders\Models\Order;
 
 
-// Repository contracts
+// repository contracts
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderSourceRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\UserRepositoryInterface;
 
-// Eloquent implementations
+// eloquent implementations
 use App\Infrastructure\Orders\Services\EloquentOrderAuditLogger;
 use App\Infrastructure\Orders\Repositories\EloquentOrderRepository;
 use App\Infrastructure\Orders\Repositories\EloquentOrderSourceRepository;
@@ -44,12 +44,8 @@ use App\Infrastructure\Teams\EloquentTeamRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
         $this->app->bind(OrderAuditLogger::class, EloquentOrderAuditLogger::class);
         $this->app->bind(OrderRepositoryInterface::class,       EloquentOrderRepository::class);
         $this->app->bind(
@@ -102,9 +98,6 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Order::observe(\App\Observers\OrderObserver::class);
