@@ -90,13 +90,34 @@ final class DeliveryCompanyController extends Controller
             $rules = [];
         }
 
+        // Normalize common frontend credential aliases to backend expected keys.
+        // (Frontend not modified, but backend should accept both naming conventions.)
+        $input = $request->all();
+
+        $aliasMap = [
+            'apiId'       => 'api_id',
+            'apiKey'      => 'api_key',
+            'secretKey'   => 'secret_key',
+            'apiSecret'   => 'api_secret',
+            'apiSecretKey'=> 'api_secret',
+            'secret'      => 'secret_key',
+        ];
+
+        foreach ($aliasMap as $from => $to) {
+            if (array_key_exists($from, $input) && ! array_key_exists($to, $input)) {
+                $input[$to] = $input[$from];
+            }
+        }
 
         try {
-            $validated = $this->validateCredentials($request->all(), $rules);
+            $validated = $this->validateCredentials($input, $rules);
         } catch (ValidationException $e) {
+            $firstError = collect($e->errors())->flatten()->first();
+
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors'  => $e->errors(),
+                'first_error' => $firstError,
             ], 422);
         }
 

@@ -30,6 +30,12 @@ final class DeliveryMapper
             orderId: $model->order_id,
             deliveryCompanyId: $model->delivery_company_id,
             trackingNumber: $model->tracking_number,
+
+            parcelCode: $model->parcel_code,
+            externalReference: $model->external_reference,
+            carrierTrackingNumber: $model->carrier_tracking_number,
+            carrierPayload: $model->carrier_payload,
+
             status: new ShipmentStatusSlug($statusSlug),
             address: new Address(
                 recipientName: $model->recipient_name,
@@ -54,6 +60,12 @@ final class DeliveryMapper
             'order_id' => $entity->orderId,
             'delivery_company_id' => $entity->deliveryCompanyId,
             'tracking_number' => $entity->trackingNumber,
+
+            'parcel_code' => $entity->parcelCode,
+            'external_reference' => $entity->externalReference,
+            'carrier_tracking_number' => $entity->carrierTrackingNumber,
+            'carrier_payload' => $entity->carrierPayload,
+
             'shipment_status_id' => $statusId,
             'recipient_name' => $entity->address->recipientName,
             'recipient_phone' => $entity->address->recipientPhone,

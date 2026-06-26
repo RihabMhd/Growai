@@ -53,24 +53,52 @@ final class CreateParcelJob implements ShouldQueue
                 'reference' => 'ORD-' . $shipment->orderId,
             ]);
 
-            $trackingNumber = $result['tracking_number'] ?? $result['parcel_id'] ?? null;
+            $trackingNumber = $result['tracking_number'] ?? $result['parcel_id'] ?? $result['tracking_code'] ?? null;
 
             if (! $trackingNumber) {
                 throw new \RuntimeException('Carrier did not return a tracking number.');
             }
 
+            // NOTE: carrier identifiers will be persisted once shipment persistence mapping is updated.
+            // For now we keep payload+tracking in shipment; identifiers are stored in carrier_payload/history payload.
+
+            // Immediately after parcel creation, show "Nouveau Colis" in UI.
+            $carrierPayload = $result['raw'] ?? $result;
+
+            // Persist all carrier identifiers returned by createParcel (schema-agnostic)
+            $parcelCode = $result['parcel_code']
+                ?? $result['external_reference']
+                ?? $result['reference']
+                ?? $result['parcel_id']
+                ?? $trackingNumber;
+
+            $externalReference = $result['external_reference']
+                ?? $result['reference']
+                ?? null;
+
+            $carrierTrackingNumber = $result['carrier_tracking_number']
+                ?? $result['tracking_code']
+                ?? $result['tracking_number']
+                ?? $trackingNumber;
+
             $updated = $shipments->save(
                 $shipment
                     ->withTrackingNumber($trackingNumber)
-                    ->withStatus(new ShipmentStatusSlug(ShipmentStatusSlug::PICKED_UP))
+                    ->withCarrierIdentifiers(
+                        parcelCode: $parcelCode,
+                        externalReference: $externalReference,
+                        carrierTrackingNumber: $carrierTrackingNumber,
+                        carrierPayload: $carrierPayload,
+                    )
+                    ->withStatus(new ShipmentStatusSlug(ShipmentStatusSlug::LABEL_CREATED))
             );
 
             $lifecycle->recordStatusChange(
                 shipment: $updated,
-                newStatus: $updated->status,
+                newStatus: new ShipmentStatusSlug(ShipmentStatusSlug::LABEL_CREATED),
                 source: 'carrier_api',
-                description: 'Parcel created with carrier.',
-                payload: $result,
+                description: 'Nouveau Colis',
+                payload: $carrierPayload,
             );
 
             Order::where('id', $shipment->orderId)->update(['shipment_id' => $updated->id]);

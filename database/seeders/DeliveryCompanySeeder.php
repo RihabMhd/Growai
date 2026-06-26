@@ -21,7 +21,7 @@ class DeliveryCompanySeeder extends Seeder
             DB::table('delivery_companies')->updateOrInsert(
                 ['slug' => $company['slug']],
                 array_merge($company, [
-                    'is_active' => true,
+                    'is_active' => false,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ])

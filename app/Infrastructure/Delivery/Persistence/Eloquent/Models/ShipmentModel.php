@@ -16,6 +16,13 @@ class ShipmentModel extends Model
         'delivery_company_id',
         'tracking_number',
         'shipment_status_id',
+
+        // Generic carrier identifiers
+        'parcel_code',
+        'external_reference',
+        'carrier_tracking_number',
+        'carrier_payload',
+
         'recipient_name',
         'recipient_phone',
         'address',
@@ -32,6 +39,7 @@ class ShipmentModel extends Model
         'cod_amount' => 'float',
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'carrier_payload' => 'array',
     ];
 
     public function order(): BelongsTo
