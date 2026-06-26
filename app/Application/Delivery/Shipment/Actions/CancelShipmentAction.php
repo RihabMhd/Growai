@@ -8,6 +8,8 @@ use App\Domain\Delivery\Shipment\Exceptions\ShipmentNotFoundException;
 use App\Domain\Delivery\Shipment\Repositories\ShipmentRepositoryInterface;
 use App\Domain\Delivery\Shipment\Services\ShipmentLifecycleService;
 use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
+use App\Domain\Orders\Models\Order;
+use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Infrastructure\Delivery\Queue\Jobs\CancelParcelJob;
 
 final class CancelShipmentAction
@@ -15,6 +17,7 @@ final class CancelShipmentAction
     public function __construct(
         private readonly ShipmentRepositoryInterface $shipments,
         private readonly ShipmentLifecycleService $lifecycle,
+        private readonly OrderAuditLogger $orderAuditLogger,
     ) {}
 
     public function execute(CancelShipmentCommand $command): \App\Domain\Delivery\Shipment\Entities\Shipment
@@ -43,6 +46,18 @@ final class CancelShipmentAction
             source: 'manual',
             description: 'Shipment cancelled by user.',
         );
+
+        $order = Order::find($shipment->orderId);
+        if ($order) {
+            $this->orderAuditLogger->log(
+                order: $order,
+                userId: auth()->id(),
+                actionType: 'parcel_cancelled',
+                oldValue: $shipment->trackingNumber ?? 'pending',
+                newValue: 'cancelled',
+                description: 'Parcel cancelled for shipment #' . $shipment->id,
+            );
+        }
 
         return $updated;
     }

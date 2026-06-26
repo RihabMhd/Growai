@@ -6,10 +6,14 @@ use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Models\OrderItem;
 use App\Domain\Products\Models\Product;
 use App\Domain\Shopify\Models\Shop;
+use App\Domain\Orders\Services\OrderAuditLogger;
 use Illuminate\Support\Facades\Log;
 
 final readonly class ShopifyOrderImporter
 {
+    public function __construct(
+        private OrderAuditLogger $auditLogger,
+    ) {}
 
     public function sync(Shop $shop, array $orders): array
     {
@@ -106,22 +110,44 @@ final readonly class ShopifyOrderImporter
 
     public function markCancelled(Shop $shop, string $externalOrderId): void
     {
-        $this->findByExternalId($shop, $externalOrderId)
-            ?->update(['status' => 'cancelled']);
+        $order = $this->findByExternalId($shop, $externalOrderId);
+        if (! $order) {
+            return;
+        }
+
+        $order->update(['status' => 'cancelled']);
     }
 
 
     public function markPaid(Shop $shop, string $externalOrderId): void
     {
-        $this->findByExternalId($shop, $externalOrderId)
-            ?->update(['financial_status' => 'paid']);
+        $order = $this->findByExternalId($shop, $externalOrderId);
+        if (! $order) {
+            return;
+        }
+
+        $oldStatus = $order->financial_status;
+        $order->update(['financial_status' => 'paid']);
+
+        $this->auditLogger->log(
+            order: $order,
+            userId: null,
+            actionType: 'payment_status_changed',
+            oldValue: $oldStatus,
+            newValue: 'paid',
+            description: 'Payment status updated to paid via Shopify webhook.',
+        );
     }
 
 
     public function markFulfilled(Shop $shop, string $externalOrderId): void
     {
-        $this->findByExternalId($shop, $externalOrderId)
-            ?->update(['status' => 'fulfilled']);
+        $order = $this->findByExternalId($shop, $externalOrderId);
+        if (! $order) {
+            return;
+        }
+
+        $order->update(['status' => 'fulfilled']);
     }
 
     private function findByExternalId(Shop $shop, string $externalOrderId): ?Order

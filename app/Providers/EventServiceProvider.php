@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Listeners\ProcessCommission;
+use App\Listeners\LogOrderHistory;
 class EventServiceProvider extends ServiceProvider
 {
 
@@ -15,6 +16,7 @@ class EventServiceProvider extends ServiceProvider
         \App\Domain\Orders\Events\OrderStatusChanged::class => [
             ProcessCommission::class,
             SendWhatsappNotification::class,
+            LogOrderHistory::class,
         ],
         Registered::class => [
             SendEmailVerificationNotification::class,

@@ -3,7 +3,6 @@
 namespace App\Application\Orders\RecoverAbandonedOrder;
 
 use App\Domain\Orders\Models\Order;
-use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Orders\States\OrderStateMachine;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +12,6 @@ class RecoverAbandonedOrderHandler
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orders,
-        private readonly OrderAuditLogger $auditLogger,
     ) {}
 
     public function handle(int|string $orderId, ?int $actorId): Order
@@ -36,15 +34,6 @@ class RecoverAbandonedOrderHandler
                 'status' => $locked->status,
                 'is_abandoned' => false,
             ]);
-
-            $this->auditLogger->log(
-                order: $locked,
-                userId: $actorId,
-                actionType: 'recovery_successful',
-                oldValue: 'abandoned',
-                newValue: 'recovered',
-                description: "Commande rÃ©cupÃ©rÃ©e avec succÃ¨s.",
-            );
         });
 
         return $this->orders->findWithRelations($orderId);

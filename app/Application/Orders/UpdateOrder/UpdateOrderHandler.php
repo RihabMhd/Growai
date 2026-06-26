@@ -41,10 +41,12 @@ class UpdateOrderHandler
                 }
             }
 
+            $orderFields = [];
+
             if ($command->items !== null) {
                 $subtotal = $this->itemsReplacer->replace($order, $command->items);
                 $shipping = $command->shippingPrice ?? $order->shipping_price;
-                $order->update(['total_price' => $subtotal + $shipping]);
+                $orderFields['total_price'] = $subtotal + $shipping;
             }
 
             if ($this->hasAddressData($command)) {
@@ -67,7 +69,6 @@ class UpdateOrderHandler
                 }
             }
 
-            $orderFields = [];
             if (in_array('financial_status', $command->providedFields)) $orderFields['financial_status'] = $command->financialStatus;
             if (in_array('notes', $command->providedFields)) $orderFields['notes'] = $command->notes;
             if (in_array('shipping_price', $command->providedFields)) $orderFields['shipping_price'] = $command->shippingPrice;
@@ -118,6 +119,34 @@ class UpdateOrderHandler
                     newValue:    null,
                     description: "Produits de la commande mis à jour"
                 );
+            }
+
+            if (in_array('financial_status', $command->providedFields) && $command->financialStatus !== null) {
+                $oldFinancialStatus = $order->getOriginal('financial_status');
+                if ($oldFinancialStatus !== $command->financialStatus) {
+                    $this->auditLogger->log(
+                        order:       $order,
+                        userId:      $command->actorId,
+                        actionType:  'payment_status_changed',
+                        oldValue:    $oldFinancialStatus,
+                        newValue:    $command->financialStatus,
+                        description: "Statut de paiement modifié de '{$oldFinancialStatus}' à '{$command->financialStatus}'."
+                    );
+                }
+            }
+
+            if (in_array('notes', $command->providedFields) && $command->notes !== null) {
+                $oldNotes = $order->getOriginal('notes');
+                if ($oldNotes !== $command->notes) {
+                    $this->auditLogger->log(
+                        order:       $order,
+                        userId:      $command->actorId,
+                        actionType:  'note_added',
+                        oldValue:    $oldNotes,
+                        newValue:    $command->notes,
+                        description: "Notes de la commande mises à jour."
+                    );
+                }
             }
         });
 

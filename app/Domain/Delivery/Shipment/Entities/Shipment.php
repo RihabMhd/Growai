@@ -4,7 +4,7 @@ namespace App\Domain\Delivery\Shipment\Entities;
 
 use App\Domain\Delivery\Shipment\ValueObjects\Address;
 use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
-
+use DateTimeImmutable;
 final class Shipment
 {
     public function __construct(
@@ -12,21 +12,21 @@ final class Shipment
         public int $orderId,
         public ?int $deliveryCompanyId,
         public ?string $trackingNumber,
+        public ShipmentStatusSlug $status,
+        public Address $address,
+        public float $codAmount = 0.0,
+        public ?string $deliveryNotes = null,
 
-        // Generic carrier identifiers (schema-agnostic)
+        // Optional carrier fields
         public ?string $parcelCode = null,
         public ?string $externalReference = null,
         public ?string $carrierTrackingNumber = null,
         public ?array $carrierPayload = null,
 
-        public ShipmentStatusSlug $status,
-        public Address $address,
-        public float $codAmount = 0.0,
-        public ?string $deliveryNotes = null,
-        public ?\DateTimeImmutable $shippedAt = null,
-        public ?\DateTimeImmutable $deliveredAt = null,
-        public ?\DateTimeImmutable $createdAt = null,
-        public ?\DateTimeImmutable $updatedAt = null,
+        public ?DateTimeImmutable $shippedAt = null,
+        public ?DateTimeImmutable $deliveredAt = null,
+        public ?DateTimeImmutable $createdAt = null,
+        public ?DateTimeImmutable $updatedAt = null,
     ) {}
 
     public function isFinal(): bool

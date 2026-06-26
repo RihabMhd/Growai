@@ -16,6 +16,7 @@ final class RecoveryRuleExecutor
     public function __construct(
         private readonly WhatsAppServiceInterface $whatsApp,
         private readonly RecoveryPlaceholderRenderer $renderer,
+        private readonly OrderAuditLogger $auditLogger,
     ) {}
 
 
@@ -100,14 +101,14 @@ final class RecoveryRuleExecutor
                     'sent_at' => now(),
                 ]);
 
-                OrderHistory::create([
-                    'order_id' => $order->id,
-                    'user_id' => null,
-                    'action_type' => 'recovery_stage_executed',
-                    'old_value' => null,
-                    'new_value' => $this->stageKey($rule),
-                    'description' => "Recovery stage {$rule->name} sent.",
-                ]);
+                $this->auditLogger->log(
+                    order: $order,
+                    userId: null,
+                    actionType: 'recovery_stage_executed',
+                    oldValue: null,
+                    newValue: $this->stageKey($rule),
+                    description: "Recovery stage {$rule->name} sent.",
+                );
             });
 
             return true;

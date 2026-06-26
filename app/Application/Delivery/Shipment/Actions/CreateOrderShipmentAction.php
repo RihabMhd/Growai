@@ -74,6 +74,10 @@ final class CreateOrderShipmentAction
                     orderId: $order->id,
                     deliveryCompanyId: $data->deliveryCompanyId,
                     trackingNumber: null,
+                    parcelCode: null,
+                    externalReference: null,
+                    carrierTrackingNumber: null,
+                    carrierPayload: null,
                     status: ShipmentStatusSlug::labelCreated(),
                     address: new Address(
                         recipientName: $data->clientName,
@@ -119,4 +123,3 @@ final class CreateOrderShipmentAction
         });
     }
 }
-
