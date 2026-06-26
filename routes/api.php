@@ -215,6 +215,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Orders — Shipments
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('admin/orders')->group(function () {
+        Route::post('/{order}/shipments', [\App\Http\Controllers\Api\Order\AdminOrderShipmentController::class, 'store']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivery Companies (Active)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('admin/delivery-companies')->group(function () {
+        Route::get('/active', [\App\Http\Controllers\Api\Delivery\ActiveDeliveryCompaniesController::class, 'index']);
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Delivery Companies
     |--------------------------------------------------------------------------
     */
