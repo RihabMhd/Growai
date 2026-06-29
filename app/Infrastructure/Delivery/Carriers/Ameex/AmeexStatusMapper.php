@@ -3,42 +3,43 @@
 namespace App\Infrastructure\Delivery\Carriers\Ameex;
 
 use App\Domain\Delivery\Shipment\Services\ShipmentStatusMapperInterface;
+use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
 
 final class AmeexStatusMapper implements ShipmentStatusMapperInterface
 {
     private const MAP = [
-        'pending'           => 'label_created',
-        'created'           => 'label_created',
-        'label_created'     => 'label_created',
-        'confirmed'         => 'confirmed',
-        'picked_up'         => 'in_transit',
-        'collected'         => 'in_transit',
-        'sent'              => 'in_transit',
-        'travelling'        => 'in_transit',
-        'in_transit'        => 'in_transit',
-        'out_for_delivery'  => 'out_for_delivery',
-        'near_delivery'     => 'out_for_delivery',
-        'delivered'         => 'delivered',
-        'completed'         => 'delivered',
-        'received'          => 'fulfilled',
-        'attempted_delivery'=> 'attempted_delivery',
-        'no_answer'         => 'attempted_delivery',
-        'voicemail'         => 'attempted_delivery',
-        'absent'            => 'attempted_delivery',
-        'postponed'         => 'delayed',
-        'delayed'           => 'delayed',
-        'returned'          => 'returned',
-        'failed'            => 'delivery_failed',
-        'delivery_failed'   => 'delivery_failed',
-        'cancelled'         => 'delivery_failed',
-        'partial'           => 'partial',
+        'pending'           => ShipmentStatusSlug::LABEL_CREATED,
+        'created'           => ShipmentStatusSlug::LABEL_CREATED,
+        'label_created'     => ShipmentStatusSlug::LABEL_CREATED,
+        'confirmed'         => ShipmentStatusSlug::CONFIRMED,
+        'picked_up'         => ShipmentStatusSlug::IN_TRANSIT,
+        'collected'         => ShipmentStatusSlug::IN_TRANSIT,
+        'sent'              => ShipmentStatusSlug::IN_TRANSIT,
+        'travelling'        => ShipmentStatusSlug::IN_TRANSIT,
+        'in_transit'        => ShipmentStatusSlug::IN_TRANSIT,
+        'out_for_delivery'  => ShipmentStatusSlug::OUT_FOR_DELIVERY,
+        'near_delivery'     => ShipmentStatusSlug::OUT_FOR_DELIVERY,
+        'delivered'         => ShipmentStatusSlug::DELIVERED,
+        'completed'         => ShipmentStatusSlug::DELIVERED,
+        'received'          => ShipmentStatusSlug::FULFILLED,
+        'attempted_delivery'=> ShipmentStatusSlug::ATTEMPTED_DELIVERY,
+        'no_answer'         => ShipmentStatusSlug::ATTEMPTED_DELIVERY,
+        'voicemail'         => ShipmentStatusSlug::ATTEMPTED_DELIVERY,
+        'absent'            => ShipmentStatusSlug::ATTEMPTED_DELIVERY,
+        'postponed'         => ShipmentStatusSlug::DELAYED,
+        'delayed'           => ShipmentStatusSlug::DELAYED,
+        'returned'          => ShipmentStatusSlug::RETURNED,
+        'failed'            => ShipmentStatusSlug::DELIVERY_FAILED,
+        'delivery_failed'   => ShipmentStatusSlug::DELIVERY_FAILED,
+        'cancelled'         => ShipmentStatusSlug::DELIVERY_FAILED,
+        'partial'           => ShipmentStatusSlug::PARTIAL,
     ];
 
     public function mapFromProvider(string $providerStatus): string
     {
         $normalized = strtolower(trim($providerStatus));
 
-        return self::MAP[$normalized] ?? 'in_transit';
+        return self::MAP[$normalized] ?? ShipmentStatusSlug::IN_TRANSIT;
     }
 
     public function getProviderStatuses(): array

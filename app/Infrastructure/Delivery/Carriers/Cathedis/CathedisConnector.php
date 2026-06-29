@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Delivery\Carriers\Cathedis;
 
+use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
 use App\Infrastructure\Delivery\Carriers\Generic\AbstractCarrierConnector;
 use Illuminate\Support\Facades\Http;
 
@@ -10,16 +11,16 @@ final class CathedisConnector extends AbstractCarrierConnector
     public function getAvailableStatuses(): array
     {
         return [
-            ['code' => 'unfulfilled',        'label' => 'Unfulfilled',        'color' => '#6B7280'],
-            ['code' => 'label_created',      'label' => 'Label Created',      'color' => '#9CA3AF'],
-            ['code' => 'confirmed',          'label' => 'Confirmed',          'color' => '#22C55E'],
-            ['code' => 'in_transit',         'label' => 'In Transit',         'color' => '#3B82F6'],
-            ['code' => 'out_for_delivery',   'label' => 'Out for Delivery',   'color' => '#F59E0B'],
-            ['code' => 'delivered',          'label' => 'Delivered',          'color' => '#10B981'],
-            ['code' => 'attempted_delivery', 'label' => 'Attempted Delivery', 'color' => '#F97316'],
-            ['code' => 'delivery_failed',    'label' => 'Delivery Failed',    'color' => '#EF4444'],
-            ['code' => 'delayed',            'label' => 'Delayed',            'color' => '#F97316'],
-            ['code' => 'returned',           'label' => 'Returned',           'color' => '#8B5CF6'],
+            ['code' => ShipmentStatusSlug::UNFULFILLED,        'label' => 'Unfulfilled',        'color' => '#6B7280'],
+            ['code' => ShipmentStatusSlug::LABEL_CREATED,      'label' => 'Label Created',      'color' => '#9CA3AF'],
+            ['code' => ShipmentStatusSlug::CONFIRMED,          'label' => 'Confirmed',          'color' => '#22C55E'],
+            ['code' => ShipmentStatusSlug::IN_TRANSIT,         'label' => 'In Transit',         'color' => '#3B82F6'],
+            ['code' => ShipmentStatusSlug::OUT_FOR_DELIVERY,   'label' => 'Out for Delivery',   'color' => '#F59E0B'],
+            ['code' => ShipmentStatusSlug::DELIVERED,          'label' => 'Delivered',          'color' => '#10B981'],
+            ['code' => ShipmentStatusSlug::ATTEMPTED_DELIVERY, 'label' => 'Attempted Delivery', 'color' => '#F97316'],
+            ['code' => ShipmentStatusSlug::DELIVERY_FAILED,    'label' => 'Delivery Failed',    'color' => '#EF4444'],
+            ['code' => ShipmentStatusSlug::DELAYED,            'label' => 'Delayed',            'color' => '#F97316'],
+            ['code' => ShipmentStatusSlug::RETURNED,           'label' => 'Returned',           'color' => '#8B5CF6'],
         ];
     }
 
