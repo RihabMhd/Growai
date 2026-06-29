@@ -11,7 +11,27 @@ class OrderStatusController extends Controller
 {
     public function index(Request $request)
     {
-        $orderStatuses = OrderStatus::orderBy('name')->get();
+
+        $confirmationSlugs = [
+            'new',
+            'confirmed',
+            'no_response',
+            'callback',
+            'cancelled',
+            'duplicate',
+            'wrong_number',
+        ];
+
+
+        $orderStatuses = OrderStatus::query()
+            ->whereIn('slug', array_values(array_unique($confirmationSlugs)))
+            ->orderBy('position')
+            ->orderBy('name')
+            ->get();
+
+
+
+
         return response()->json($orderStatuses);
     }
 

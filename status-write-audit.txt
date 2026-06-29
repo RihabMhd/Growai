@@ -1,0 +1,397 @@
+﻿===== TARGET=app PATTERN=->status =====
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\CancelShipmentAction.php:32
+            throw ShipmentCannotBeCancelledException::forStatus($shipment->status->value);
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\CancelShipmentAction.php:45
+            newStatus: $updated->status,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\CreateOrderShipmentAction.php:100
+                newStatus: $shipment->status,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\CreateShipmentAction.php:63
+                newStatus: $shipment->status,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\GetShipmentTrackingAction.php:32
+            'status' => $shipment->status->value,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\ListShipmentsAction.php:18
+        if ($query->statusSlug) {
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\ListShipmentsAction.php:19
+            $builder->whereHas('status', fn ($q) => $q->where('slug', $query->statusSlug));
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\UpdateShipmentAction.php:30
+        if ($command->statusSlug && $command->statusSlug !== $shipment->status->value) {
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\UpdateShipmentAction.php:31
+            $newStatus = new ShipmentStatusSlug($command->statusSlug);
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Actions\UpdateShipmentAction.php:50
+                status: $updated->status,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Handlers\ProcessCarrierWebhookHandler.php:64
+            $mappedStatus = new ShipmentStatusSlug($this->statusMapper->mapFromCarrier($carrierStatus));
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Handlers\ProcessCarrierWebhookHandler.php:66
+            if ($mappedStatus->value === $shipment->status->value) {
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Handlers\ProcessCarrierWebhookHandler.php:80
+                    status: $updated->status,
+---
+C:\laragon\www\growai\backend\app\Application\Delivery\Shipment\Handlers\ProcessCarrierWebhookHandler.php:97
+                    status: $updated->status,
+---
+C:\laragon\www\growai\backend\app\Application\Notifications\SaveOrderStatusTemplate\SaveOrderStatusTemplateHandler.php:10
+        $status = OrderStatus::findOrFail($cmd->statusId);
+---
+C:\laragon\www\growai\backend\app\Application\Notifications\SendOrderNotification\SendOrderNotificationHandler.php:18
+        $status = OrderStatus::findOrFail($cmd->statusId);
+---
+C:\laragon\www\growai\backend\app\Application\Notifications\SendOrderNotification\SendOrderNotificationHandler.php:38
+            [$order->customer_name, $order->id, $order->status],
+---
+C:\laragon\www\growai\backend\app\Application\Orders\ListAbandonedOrders\ListAbandonedOrdersHandler.php:21
+        $this->applyStatusFilter($listQuery, $query->status);
+---
+C:\laragon\www\growai\backend\app\Application\Orders\ListAbandonedOrders\ListAbandonedOrdersHandler.php:172
+            'raw_status' => $order->status,
+---
+C:\laragon\www\growai\backend\app\Application\Orders\ListAbandonedOrders\ListAbandonedOrdersHandler.php:194
+        if ($order->status === 'recovered') {
+---
+C:\laragon\www\growai\backend\app\Application\Orders\ListOrders\ListOrdersHandler.php:69
+        if ($query->status === null) {
+---
+C:\laragon\www\growai\backend\app\Application\Orders\ListOrders\ListOrdersHandler.php:73
+        $builder->where('status', $query->status);
+---
+C:\laragon\www\growai\backend\app\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler.php:27
+            if ($locked->status !== 'abandoned') {
+---
+C:\laragon\www\growai\backend\app\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler.php:34
+                'status' => $locked->status,
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:90
+            if ($command->status !== null && $command->status !== $order->status) {
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:92
+                $machine->transitionTo($command->status);
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:95
+                $orderFields['status'] = $command->status;
+---
+C:\laragon\www\growai\backend\app\Application\Products\BulkUpdateStatus\BulkUpdateStatusHandler.php:22
+            $command->status,
+---
+C:\laragon\www\growai\backend\app\Application\Products\CreateProduct\CreateProductHandler.php:38
+            status:      $data->status,
+---
+C:\laragon\www\growai\backend\app\Application\Products\UpdateProduct\UpdateProductHandler.php:129
+        if ($data->status !== null)      $payload['status']       = $data->status;
+---
+C:\laragon\www\growai\backend\app\Application\Products\UpdateProduct\UpdateProductHandler.php:180
+            status:      $data->status,
+---
+C:\laragon\www\growai\backend\app\Application\Shopify\ListShopOrders\ListShopOrdersHandler.php:16
+        if ($query->status) {
+---
+C:\laragon\www\growai\backend\app\Application\Shopify\ListShopOrders\ListShopOrdersHandler.php:19
+                $query->status
+---
+C:\laragon\www\growai\backend\app\Console\Commands\MarkAbandonedOrdersCommand.php:36
+                            || $order->status !== 'no_answer'
+---
+C:\laragon\www\growai\backend\app\Console\Commands\MarkAbandonedOrdersCommand.php:45
+                            'status' => $order->status,
+---
+C:\laragon\www\growai\backend\app\Domain\Delivery\Shipment\Entities\Shipment.php:34
+        return $this->status->isFinal();
+---
+C:\laragon\www\growai\backend\app\Domain\Delivery\Shipment\Entities\Shipment.php:39
+        return $this->status->isInTransit();
+---
+C:\laragon\www\growai\backend\app\Domain\Delivery\Shipment\Entities\Shipment.php:84
+            status: $this->status,
+---
+C:\laragon\www\growai\backend\app\Domain\Delivery\Shipment\Entities\Shipment.php:112
+            status: $this->status,
+---
+C:\laragon\www\growai\backend\app\Domain\Delivery\Shipment\Services\ShipmentLifecycleService.php:26
+            oldStatus: $shipment->status->value,
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\Models\Order.php:125
+            if (empty($order->status)) {
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\Models\Order.php:126
+                $order->status = 'nouveau';
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:49
+        $current = $this->order->status;
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:66
+                "Transition invalide : '{$this->order->status}' → '{$newStatus}'."
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:70
+        $this->order->status = $newStatus;
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:76
+        return self::TRANSITIONS[$this->order->status] ?? [];
+---
+C:\laragon\www\growai\backend\app\Domain\Products\DTOs\ProductData.php:84
+            'status'       => $this->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Carriers\Ameex\AmeexHttpClient.php:42
+            'status' => $response->status(),
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Carriers\Ameex\AmeexHttpClient.php:51
+            'status' => $response->status(),
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Persistence\Eloquent\Mappers\DeliveryMapper.php:24
+        $statusSlug = $model->relationLoaded('status') && $model->status
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Persistence\Eloquent\Mappers\DeliveryMapper.php:25
+            ? $model->status->slug
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Persistence\Eloquent\Repositories\EloquentShipmentRepository.php:74
+        $statusId = ShipmentStatusModel::where('slug', $shipment->status->value)->value('id')
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Queue\Jobs\SyncTrackingJob.php:47
+        if ($mappedSlug === $shipment->status->value) {
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Queue\Jobs\SyncTrackingJob.php:57
+            newStatus: $updated->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Services\OrderShipmentSyncService.php:25
+        $orderStatus = self::ORDER_STATUS_MAP[$shipment->status->value] ?? null;
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Services\ShipmentNotificationService.php:15
+            'status' => $shipment->status->value,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Orders\Repositories\EloquentOrderRepository.php:84
+                if ($order->status !== $newStatus) {
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Orders\Repositories\EloquentShipmentRepository.php:62
+                : $entity->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Products\Repositories\EloquentProductRepository.php:69
+            ->when($filters->status,      fn($q) => $q->where('products.status',       $filters->status))
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Products\Repositories\EloquentProductRepository.php:175
+            'status'       => $data->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Products\Repositories\EloquentProductRepository.php:221
+            'status'       => $data->status      ?? $product->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Shopify\Clients\ShopifyClient.php:148
+                'status' => $response->status(),
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Shopify\Services\ShopifyProductImporter.php:93
+                'status'       => $dto->status,
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Shopify\Services\ShopifyProductImporter.php:147
+                    'status'       => $dto->status,
+---
+C:\laragon\www\growai\backend\app\Jobs\SendWhatsappMessageJob.php:32
+                'status_code' => $response->status(),
+---
+C:\laragon\www\growai\backend\app\Jobs\SendWhatsappMessageJob.php:44
+            'status_code' => $response->status(),
+---
+C:\laragon\www\growai\backend\app\Listeners\SendWhatsappNotification.php:101
+            '{{status}}'         => $order->status,
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:18
+            'status' => $order->status,
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:35
+            'current_status' => $order->status,
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:50
+        $newStatus = $order->status;
+---
+===== TARGET=app PATTERN= setStatus( =====
+===== TARGET=app PATTERN=setStatus( =====
+===== TARGET=app PATTERN=OrderStateMachine =====
+C:\laragon\www\growai\backend\app\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler.php:6
+use App\Domain\Orders\States\OrderStateMachine;
+---
+C:\laragon\www\growai\backend\app\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler.php:31
+            (new OrderStateMachine($locked))->transitionTo('recovered');
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:8
+use App\Domain\Orders\States\OrderStateMachine;
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:91
+                $machine = new OrderStateMachine($order);
+---
+C:\laragon\www\growai\backend\app\Console\Commands\MarkAbandonedOrdersCommand.php:6
+use App\Domain\Orders\States\OrderStateMachine;
+---
+C:\laragon\www\growai\backend\app\Console\Commands\MarkAbandonedOrdersCommand.php:42
+                        (new OrderStateMachine($order))->transitionTo('abandoned');
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:8
+class OrderStateMachine
+---
+===== TARGET=app PATTERN=canTransitionTo( =====
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:47
+    public function canTransitionTo(string $newStatus): bool
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:64
+        if (! $this->canTransitionTo($newStatus)) {
+---
+===== TARGET=app PATTERN=transitionTo( =====
+C:\laragon\www\growai\backend\app\Application\Orders\RecoverAbandonedOrder\RecoverAbandonedOrderHandler.php:31
+            (new OrderStateMachine($locked))->transitionTo('recovered');
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:92
+                $machine->transitionTo($command->status);
+---
+C:\laragon\www\growai\backend\app\Console\Commands\MarkAbandonedOrdersCommand.php:42
+                        (new OrderStateMachine($order))->transitionTo('abandoned');
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:47
+    public function canTransitionTo(string $newStatus): bool
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:62
+    public function transitionTo(string $newStatus): void
+---
+C:\laragon\www\growai\backend\app\Domain\Orders\States\OrderStateMachine.php:64
+        if (! $this->canTransitionTo($newStatus)) {
+---
+===== TARGET=app PATTERN=OrderStatusChanged =====
+C:\laragon\www\growai\backend\app\Domain\Orders\Events\OrderStatusChanged.php:9
+class OrderStatusChanged
+---
+C:\laragon\www\growai\backend\app\Listeners\LogOrderHistory.php:5
+use App\Domain\Orders\Events\OrderStatusChanged;
+---
+C:\laragon\www\growai\backend\app\Listeners\LogOrderHistory.php:15
+    public function handle(OrderStatusChanged $event): void
+---
+C:\laragon\www\growai\backend\app\Listeners\ProcessCommission.php:9
+use App\Domain\Orders\Events\OrderStatusChanged;
+---
+C:\laragon\www\growai\backend\app\Listeners\ProcessCommission.php:20
+    public function handle(OrderStatusChanged $event): void
+---
+C:\laragon\www\growai\backend\app\Listeners\SendWhatsappNotification.php:5
+use App\Domain\Orders\Events\OrderStatusChanged;
+---
+C:\laragon\www\growai\backend\app\Listeners\SendWhatsappNotification.php:18
+    public function handle(OrderStatusChanged $event): void
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:5
+use App\Domain\Orders\Events\OrderStatusChanged;
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:77
+        OrderStatusChanged::dispatch(
+---
+C:\laragon\www\growai\backend\app\Providers\EventServiceProvider.php:5
+use App\Events\OrderStatusChanged;
+---
+C:\laragon\www\growai\backend\app\Providers\EventServiceProvider.php:16
+        \App\Domain\Orders\Events\OrderStatusChanged::class => [
+---
+===== TARGET=app PATTERN=status_changed =====
+C:\laragon\www\growai\backend\app\Application\Orders\CreateOrder\CreateOrderHandler.php:114
+                actionType: 'status_changed',
+---
+C:\laragon\www\growai\backend\app\Application\Orders\UpdateOrder\UpdateOrderHandler.php:130
+                        actionType:  'payment_status_changed',
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Delivery\Carriers\Ameex\AmeexConnector.php:78
+                'events' => ['status_changed', 'delivered', 'returned'],
+---
+C:\laragon\www\growai\backend\app\Infrastructure\Shopify\Services\ShopifyOrderImporter.php:135
+            actionType: 'payment_status_changed',
+---
+C:\laragon\www\growai\backend\app\Listeners\LogOrderHistory.php:50
+                'action_type' => 'status_changed',
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:34
+            'status_changed' => $order->isDirty('status'),
+---
+C:\laragon\www\growai\backend\app\Observers\OrderObserver.php:67
+        Log::info('DISPATCHING_ORDER_STATUS_CHANGED', [
+---
+===== TARGET=app PATTERN=LogOrderHistory =====
+C:\laragon\www\growai\backend\app\Listeners\LogOrderHistory.php:10
+class LogOrderHistory
+---
+C:\laragon\www\growai\backend\app\Providers\EventServiceProvider.php:11
+use App\Listeners\LogOrderHistory;
+---
+C:\laragon\www\growai\backend\app\Providers\EventServiceProvider.php:19
+            LogOrderHistory::class, // Only ONE instance
+---
+===== TARGET=app PATTERN=order_status_hist =====
+===== TARGET=app PATTERN=status_history =====
+===== TARGET=app PATTERN=ChangeOrderStatusHandler =====
+===== TARGET=app PATTERN=BulkUpdateOrderStatus =====
+C:\laragon\www\growai\backend\app\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusCommand.php:3
+namespace App\Application\Orders\BulkUpdateOrderStatus;
+---
+C:\laragon\www\growai\backend\app\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusCommand.php:5
+final class BulkUpdateOrderStatusCommand
+---
+C:\laragon\www\growai\backend\app\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler.php:3
+namespace App\Application\Orders\BulkUpdateOrderStatus;
+---
+C:\laragon\www\growai\backend\app\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler.php:7
+class BulkUpdateOrderStatusHandler
+---
+C:\laragon\www\growai\backend\app\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler.php:13
+    public function handle(BulkUpdateOrderStatusCommand $command): int
+---
+C:\laragon\www\growai\backend\app\Http\Controllers\Api\Order\OrderController.php:9
+use App\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusCommand;
+---
+C:\laragon\www\growai\backend\app\Http\Controllers\Api\Order\OrderController.php:10
+use App\Application\Orders\BulkUpdateOrderStatus\BulkUpdateOrderStatusHandler;
+---
+C:\laragon\www\growai\backend\app\Http\Controllers\Api\Order\OrderController.php:37
+        private readonly BulkUpdateOrderStatusHandler $bulkUpdateStatus,
+---
+C:\laragon\www\growai\backend\app\Http\Controllers\Api\Order\OrderController.php:179
+        $count = $this->bulkUpdateStatus->handle(new BulkUpdateOrderStatusCommand(
+---
+===== TARGET=app PATTERN=changeOrderStatus =====
+===== TARGET=app PATTERN=ChangeOrderStatus =====
+===== TARGET=routes PATTERN=->status =====
+===== TARGET=routes PATTERN= setStatus( =====
+===== TARGET=routes PATTERN=setStatus( =====
+===== TARGET=routes PATTERN=OrderStateMachine =====
+===== TARGET=routes PATTERN=canTransitionTo( =====
+===== TARGET=routes PATTERN=transitionTo( =====
+===== TARGET=routes PATTERN=OrderStatusChanged =====
+===== TARGET=routes PATTERN=status_changed =====
+===== TARGET=routes PATTERN=LogOrderHistory =====
+===== TARGET=routes PATTERN=order_status_hist =====
+===== TARGET=routes PATTERN=status_history =====
+===== TARGET=routes PATTERN=ChangeOrderStatusHandler =====
+===== TARGET=routes PATTERN=BulkUpdateOrderStatus =====
+===== TARGET=routes PATTERN=changeOrderStatus =====
+===== TARGET=routes PATTERN=ChangeOrderStatus =====
+===== TARGET=database PATTERN=->status =====
+C:\laragon\www\growai\backend\database\migrations\2026_06_18_000005_refactor_shipments_for_clean_architecture.php:41
+            $slug = $legacyMap[$shipment->status] ?? 'label_created';
+---
+===== TARGET=database PATTERN= setStatus( =====
+===== TARGET=database PATTERN=setStatus( =====
+===== TARGET=database PATTERN=OrderStateMachine =====
+===== TARGET=database PATTERN=canTransitionTo( =====
+===== TARGET=database PATTERN=transitionTo( =====
+===== TARGET=database PATTERN=OrderStatusChanged =====
+===== TARGET=database PATTERN=status_changed =====
+C:\laragon\www\growai\backend\database\migrations\2026_05_14_000012_create_order_histories_table.php:24
+            // status_changed | assigned | note_added | payment_updated | ...
+---
+===== TARGET=database PATTERN=LogOrderHistory =====
+===== TARGET=database PATTERN=order_status_hist =====
+===== TARGET=database PATTERN=status_history =====
+===== TARGET=database PATTERN=ChangeOrderStatusHandler =====
+===== TARGET=database PATTERN=BulkUpdateOrderStatus =====
+===== TARGET=database PATTERN=changeOrderStatus =====
+===== TARGET=database PATTERN=ChangeOrderStatus =====
+===== DONE =====

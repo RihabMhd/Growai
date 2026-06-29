@@ -17,6 +17,8 @@ final class Shipment
         public float $codAmount = 0.0,
         public ?string $deliveryNotes = null,
 
+        public ?string $providerStatus = null,
+
         // Optional carrier fields
         public ?string $parcelCode = null,
         public ?string $externalReference = null,
@@ -44,7 +46,7 @@ final class Shipment
         return ! $this->isFinal();
     }
 
-    public function withStatus(ShipmentStatusSlug $status): self
+    public function withStatus(ShipmentStatusSlug $status, ?string $providerStatus = null): self
     {
         return new self(
             id: $this->id,
@@ -58,6 +60,7 @@ final class Shipment
             carrierPayload: $this->carrierPayload,
 
             status: $status,
+            providerStatus: $providerStatus ?? $this->providerStatus,
             address: $this->address,
             codAmount: $this->codAmount,
             deliveryNotes: $this->deliveryNotes,
@@ -82,6 +85,7 @@ final class Shipment
             carrierPayload: $this->carrierPayload,
 
             status: $this->status,
+            providerStatus: $this->providerStatus,
             address: $this->address,
             codAmount: $this->codAmount,
             deliveryNotes: $this->deliveryNotes,
@@ -110,6 +114,7 @@ final class Shipment
             carrierPayload: $carrierPayload,
 
             status: $this->status,
+            providerStatus: $this->providerStatus,
             address: $this->address,
             codAmount: $this->codAmount,
             deliveryNotes: $this->deliveryNotes,

@@ -8,8 +8,27 @@ use Illuminate\Support\Facades\Http;
 
 final class AmeexConnector extends AbstractCarrierConnector
 {
+    public function getAvailableStatuses(): array
+    {
+        return [
+            ['code' => 'unfulfilled',        'label' => 'Unfulfilled',        'color' => '#6B7280'],
+            ['code' => 'label_created',      'label' => 'Label Created',      'color' => '#9CA3AF'],
+            ['code' => 'confirmed',          'label' => 'Confirmed',          'color' => '#22C55E'],
+            ['code' => 'in_transit',         'label' => 'In Transit',         'color' => '#3B82F6'],
+            ['code' => 'out_for_delivery',   'label' => 'Out for Delivery',   'color' => '#F59E0B'],
+            ['code' => 'delivered',          'label' => 'Delivered',          'color' => '#10B981'],
+            ['code' => 'attempted_delivery', 'label' => 'Attempted Delivery', 'color' => '#F97316'],
+            ['code' => 'delivery_failed',    'label' => 'Delivery Failed',    'color' => '#EF4444'],
+            ['code' => 'delayed',            'label' => 'Delayed',            'color' => '#F97316'],
+            ['code' => 'returned',           'label' => 'Returned',           'color' => '#8B5CF6'],
+            ['code' => 'partial',            'label' => 'Partial',            'color' => '#EAB308'],
+            ['code' => 'fulfilled',          'label' => 'Fulfilled',          'color' => '#059669'],
+        ];
+    }
+
     protected function authHeaders(): array
     {
+
         return [
             'X-Api-Key' => $this->credentials['api_key'] ?? '',
             'X-Api-Secret' => $this->credentials['api_secret'] ?? '',
@@ -96,3 +115,4 @@ final class AmeexConnector extends AbstractCarrierConnector
         return hash_equals($expected, $signature);
     }
 }
+

@@ -19,7 +19,7 @@ class MarkAbandonedOrdersCommand extends Command
         $marked = 0;
 
         Order::query()
-            ->where('status', 'no_answer')
+            ->where('status', 'no_response')
             ->where('is_abandoned', false)
             ->where('updated_at', '<=', $cutoff)
             ->orderBy('id')
@@ -33,7 +33,7 @@ class MarkAbandonedOrdersCommand extends Command
 
                         if (
                             $order === null
-                            || $order->status !== 'no_answer'
+|| $order->status !== 'no_response'
                             || $order->is_abandoned
                         ) {
                             return false;

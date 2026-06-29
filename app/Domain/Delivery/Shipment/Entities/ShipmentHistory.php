@@ -12,6 +12,7 @@ final readonly class ShipmentHistory
         public string $source,
         public ?string $description = null,
         public ?array $payload = null,
+        public ?string $providerStatus = null,
         public ?\DateTimeImmutable $createdAt = null,
     ) {}
 }

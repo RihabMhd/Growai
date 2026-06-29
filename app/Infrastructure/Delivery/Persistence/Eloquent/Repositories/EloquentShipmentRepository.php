@@ -37,7 +37,7 @@ final class EloquentShipmentRepository implements ShipmentRepositoryInterface
 
     public function findActiveForOrderAndCarrier(int $orderId, int $deliveryCompanyId): ?Shipment
     {
-        $failureStatusId = ShipmentStatusModel::where('slug', ShipmentStatusSlug::FAILURE)->value('id');
+        $failureStatusId = ShipmentStatusModel::where('slug', ShipmentStatusSlug::DELIVERY_FAILED)->value('id');
 
         $model = ShipmentModel::with('status')
             ->where('order_id', $orderId)

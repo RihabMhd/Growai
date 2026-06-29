@@ -16,6 +16,7 @@ class ShipmentModel extends Model
         'delivery_company_id',
         'tracking_number',
         'shipment_status_id',
+        'provider_status',
 
         // Generic carrier identifiers
         'parcel_code',

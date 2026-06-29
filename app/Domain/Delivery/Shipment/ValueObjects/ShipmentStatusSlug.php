@@ -4,25 +4,33 @@ namespace App\Domain\Delivery\Shipment\ValueObjects;
 
 final readonly class ShipmentStatusSlug
 {
+    public const UNFULFILLED = 'unfulfilled';
     public const LABEL_CREATED = 'label_created';
-    public const READY_FOR_PICKUP = 'ready_for_pickup';
-    public const PICKED_UP = 'picked_up';
+    public const LABEL_PURCHASED = 'label_purchased';
+    public const LABEL_PRINTED = 'label_printed';
+    public const CONFIRMED = 'confirmed';
+    public const IN_TRANSIT = 'in_transit';
     public const OUT_FOR_DELIVERY = 'out_for_delivery';
     public const DELIVERED = 'delivered';
+    public const ATTEMPTED_DELIVERY = 'attempted_delivery';
+    public const DELIVERY_FAILED = 'delivery_failed';
     public const DELAYED = 'delayed';
-    public const FAILURE = 'failure';
     public const RETURNED = 'returned';
+    public const PARTIAL = 'partial';
+    public const FULFILLED = 'fulfilled';
 
     private const FINAL_STATUSES = [
         self::DELIVERED,
-        self::FAILURE,
+        self::DELIVERY_FAILED,
         self::RETURNED,
+        self::FULFILLED,
     ];
 
     private const IN_TRANSIT_STATUSES = [
-        self::PICKED_UP,
+        self::IN_TRANSIT,
         self::OUT_FOR_DELIVERY,
         self::DELAYED,
+        self::ATTEMPTED_DELIVERY,
     ];
 
     public function __construct(public string $value)
@@ -30,6 +38,11 @@ final readonly class ShipmentStatusSlug
         if ($value === '') {
             throw new \InvalidArgumentException('Shipment status slug cannot be empty.');
         }
+    }
+
+    public static function unfulfilled(): self
+    {
+        return new self(self::UNFULFILLED);
     }
 
     public static function labelCreated(): self

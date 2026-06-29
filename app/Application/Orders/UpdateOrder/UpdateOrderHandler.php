@@ -6,6 +6,7 @@ use App\Domain\Orders\Models\Order;
 use App\Domain\Orders\Services\OrderAuditLogger;
 use App\Domain\Orders\Services\OrderItemsReplacer;
 use App\Domain\Orders\States\OrderStateMachine;
+use App\Domain\Orders\Services\OrderStatusValidator;
 use App\Domain\Orders\Repositories\ClientRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\OrderRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\ShipmentRepositoryInterface;
@@ -19,6 +20,7 @@ class UpdateOrderHandler
         private readonly ShipmentRepositoryInterface $shipments,
         private readonly OrderItemsReplacer          $itemsReplacer,
         private readonly OrderAuditLogger            $auditLogger,
+        private readonly OrderStatusValidator        $statusValidator,
     ) {}
 
     public function handle(UpdateOrderCommand $command): Order
@@ -88,9 +90,10 @@ class UpdateOrderHandler
             }
 
             if ($command->status !== null && $command->status !== $order->status) {
+                $this->statusValidator->assertExists($command->status);
+
                 $machine = new OrderStateMachine($order);
                 $machine->transitionTo($command->status);
-                
 
                 $orderFields['status'] = $command->status;
             }

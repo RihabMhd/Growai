@@ -37,6 +37,7 @@ final class DeliveryMapper
             carrierPayload: $model->carrier_payload,
 
             status: new ShipmentStatusSlug($statusSlug),
+            providerStatus: $model->provider_status,
             address: new Address(
                 recipientName: $model->recipient_name,
                 recipientPhone: $model->recipient_phone,
@@ -67,6 +68,7 @@ final class DeliveryMapper
             'carrier_payload' => $entity->carrierPayload,
 
             'shipment_status_id' => $statusId,
+            'provider_status' => $entity->providerStatus,
             'recipient_name' => $entity->address->recipientName,
             'recipient_phone' => $entity->address->recipientPhone,
             'address' => $entity->address->street,
@@ -102,6 +104,7 @@ final class DeliveryMapper
             source: $model->source,
             description: $model->description,
             payload: $model->payload,
+            providerStatus: $model->provider_status,
             createdAt: $model->created_at?->toDateTimeImmutable(),
         );
     }

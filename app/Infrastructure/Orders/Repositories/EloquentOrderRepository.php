@@ -7,8 +7,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
+use App\Domain\Orders\Services\OrderStatusValidator;
+
 class EloquentOrderRepository implements OrderRepositoryInterface
 {
+    public function __construct(
+        private readonly OrderStatusValidator $orderStatusValidator,
+    ) {}
     // standard eager load set
     private const BASE_RELATIONS = [
         'items.product',
@@ -75,7 +80,10 @@ class EloquentOrderRepository implements OrderRepositoryInterface
 
     public function bulkUpdateStatus(array $orderIds, string $newStatus): Collection
     {
+        $this->orderStatusValidator->assertExists($newStatus);
+
         $orders = Order::whereIn('id', $orderIds)->get();
+
 
         $changed = new Collection();
 

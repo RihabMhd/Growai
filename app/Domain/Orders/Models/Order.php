@@ -123,7 +123,7 @@ class Order extends Model
     {
         static::creating(function ($order) {
             if (empty($order->status)) {
-                $order->status = 'nouveau';
+                $order->status = 'new';
             }
         });
     }

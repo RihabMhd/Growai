@@ -19,6 +19,7 @@ final class ShipmentLifecycleService
         string $source,
         ?string $description = null,
         ?array $payload = null,
+        ?string $providerStatus = null,
     ): ShipmentHistory {
         return $this->history->record(new ShipmentHistory(
             id: null,
@@ -28,6 +29,7 @@ final class ShipmentLifecycleService
             source: $source,
             description: $description,
             payload: $payload,
+            providerStatus: $providerStatus ?? $shipment->providerStatus,
             createdAt: new \DateTimeImmutable,
         ));
     }

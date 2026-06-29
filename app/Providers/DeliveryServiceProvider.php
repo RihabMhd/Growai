@@ -10,6 +10,7 @@ use App\Domain\Delivery\Shipment\Repositories\ShipmentRepositoryInterface as Dom
 use App\Domain\Delivery\Shipment\Repositories\ShipmentStatusRepositoryInterface;
 use App\Infrastructure\Delivery\Carriers\CarrierFactory;
 use App\Infrastructure\Delivery\Carriers\CarrierManager;
+use App\Infrastructure\Delivery\Carriers\ShipmentStatusMapperFactory;
 use App\Infrastructure\Delivery\Persistence\Eloquent\Mappers\DeliveryMapper;
 use App\Infrastructure\Delivery\Persistence\Eloquent\Repositories\EloquentCarrierConfigurationRepository;
 use App\Infrastructure\Delivery\Persistence\Eloquent\Repositories\EloquentCarrierWebhookLogRepository;
@@ -36,6 +37,7 @@ final class DeliveryServiceProvider extends ServiceProvider
 
         $this->app->singleton(CarrierFactory::class);
         $this->app->singleton(CarrierManager::class);
+        $this->app->singleton(ShipmentStatusMapperFactory::class);
 
         $this->app->bind(OrderShipmentRepositoryInterface::class, OrderEloquentShipmentRepository::class);
     }

@@ -13,6 +13,21 @@ abstract class AbstractCarrierConnector implements CarrierInterface
         protected ?string $webhookUrl = null,
     ) {}
 
+    public function getAvailableStatuses(): array
+    {
+        return [
+            ['code' => 'label_created',      'label' => 'Label Created',      'color' => '#9CA3AF'],
+            ['code' => 'in_transit',         'label' => 'In Transit',         'color' => '#3B82F6'],
+            ['code' => 'out_for_delivery',   'label' => 'Out for Delivery',   'color' => '#F59E0B'],
+            ['code' => 'delivered',          'label' => 'Delivered',          'color' => '#10B981'],
+            ['code' => 'attempted_delivery', 'label' => 'Attempted Delivery', 'color' => '#F97316'],
+            ['code' => 'delivery_failed',    'label' => 'Delivery Failed',    'color' => '#EF4444'],
+            ['code' => 'delayed',            'label' => 'Delayed',            'color' => '#F97316'],
+            ['code' => 'returned',           'label' => 'Returned',           'color' => '#8B5CF6'],
+        ];
+    }
+
+
     protected function apiUrl(): string
     {
         return rtrim($this->credentials['api_url'] ?? '', '/');

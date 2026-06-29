@@ -37,7 +37,7 @@ final class CancelShipmentAction
         }
 
         $updated = $this->shipments->save(
-            $shipment->withStatus(new ShipmentStatusSlug(ShipmentStatusSlug::FAILURE))
+            $shipment->withStatus(new ShipmentStatusSlug(ShipmentStatusSlug::DELIVERY_FAILED))
         );
 
         $this->lifecycle->recordStatusChange(

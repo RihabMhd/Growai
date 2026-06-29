@@ -5,9 +5,9 @@ namespace App\Application\Delivery\Shipment\Handlers;
 use App\Domain\Delivery\DeliveryCompany\Repositories\CarrierWebhookLogRepositoryInterface;
 use App\Domain\Delivery\Shipment\Repositories\ShipmentRepositoryInterface;
 use App\Domain\Delivery\Shipment\Services\ShipmentLifecycleService;
-use App\Domain\Delivery\Shipment\Services\ShipmentStatusMapper;
 use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
 use App\Infrastructure\Delivery\Carriers\CarrierManager;
+use App\Infrastructure\Delivery\Carriers\ShipmentStatusMapperFactory;
 use App\Infrastructure\Delivery\Persistence\Eloquent\Models\CarrierWebhookLogModel;
 use App\Infrastructure\Delivery\Services\OrderShipmentSyncService;
 use App\Infrastructure\Delivery\Services\ShipmentNotificationService;
@@ -18,7 +18,7 @@ final class ProcessCarrierWebhookHandler
     public function __construct(
         private readonly CarrierWebhookLogRepositoryInterface $webhookLogs,
         private readonly ShipmentRepositoryInterface $shipments,
-        private readonly ShipmentStatusMapper $statusMapper,
+        private readonly ShipmentStatusMapperFactory $mapperFactory,
         private readonly ShipmentLifecycleService $lifecycle,
         private readonly CarrierManager $carrierManager,
         private readonly OrderShipmentSyncService $orderSync,
@@ -61,26 +61,33 @@ final class ProcessCarrierWebhookHandler
                 throw new \RuntimeException("Shipment not found for tracking [{$trackingNumber}].");
             }
 
-            $mappedStatus = new ShipmentStatusSlug($this->statusMapper->mapFromCarrier($carrierStatus));
+            $mapper = $this->mapperFactory->make($this->resolveCarrierSlug($deliveryCompanyId));
+            $fulfillmentSlug = $mapper->mapFromProvider($carrierStatus);
+            $mappedStatus = new ShipmentStatusSlug($fulfillmentSlug);
 
-            if ($mappedStatus->value === $shipment->status->value) {
+            if ($mappedStatus->value === $shipment->status->value && $carrierStatus === $shipment->providerStatus) {
                 $this->webhookLogs->markProcessed($webhookLogId);
 
                 return;
             }
 
-            $updated = $shipment->withStatus($mappedStatus);
+            $updated = $shipment->withStatus($mappedStatus, $carrierStatus);
 
-            if (in_array($mappedStatus->value, [ShipmentStatusSlug::PICKED_UP], true)) {
+            if (in_array($mappedStatus->value, [ShipmentStatusSlug::IN_TRANSIT], true) && ! $shipment->shippedAt) {
                 $updated = new \App\Domain\Delivery\Shipment\Entities\Shipment(
                     id: $updated->id,
                     orderId: $updated->orderId,
                     deliveryCompanyId: $updated->deliveryCompanyId,
                     trackingNumber: $updated->trackingNumber,
                     status: $updated->status,
+                    providerStatus: $updated->providerStatus,
                     address: $updated->address,
                     codAmount: $updated->codAmount,
                     deliveryNotes: $payload['notes'] ?? $updated->deliveryNotes,
+                    parcelCode: $updated->parcelCode,
+                    externalReference: $updated->externalReference,
+                    carrierTrackingNumber: $updated->carrierTrackingNumber,
+                    carrierPayload: $updated->carrierPayload,
                     shippedAt: new \DateTimeImmutable,
                     deliveredAt: $updated->deliveredAt,
                     createdAt: $updated->createdAt,
@@ -95,9 +102,14 @@ final class ProcessCarrierWebhookHandler
                     deliveryCompanyId: $updated->deliveryCompanyId,
                     trackingNumber: $updated->trackingNumber,
                     status: $updated->status,
+                    providerStatus: $updated->providerStatus,
                     address: $updated->address,
                     codAmount: $updated->codAmount,
                     deliveryNotes: $payload['notes'] ?? $updated->deliveryNotes,
+                    parcelCode: $updated->parcelCode,
+                    externalReference: $updated->externalReference,
+                    carrierTrackingNumber: $updated->carrierTrackingNumber,
+                    carrierPayload: $updated->carrierPayload,
                     shippedAt: $updated->shippedAt,
                     deliveredAt: new \DateTimeImmutable,
                     createdAt: $updated->createdAt,
@@ -113,6 +125,7 @@ final class ProcessCarrierWebhookHandler
                 source: 'webhook',
                 description: 'Status updated from carrier webhook.',
                 payload: $payload,
+                providerStatus: $carrierStatus,
             );
 
             $this->orderSync->syncFromShipment($saved);
@@ -127,5 +140,13 @@ final class ProcessCarrierWebhookHandler
 
             $this->webhookLogs->markProcessed($webhookLogId, $e->getMessage());
         }
+    }
+
+    private function resolveCarrierSlug(int $deliveryCompanyId): string
+    {
+        $company = app(\App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface::class)
+            ->findById($deliveryCompanyId);
+
+        return $company?->slug ?? 'generic';
     }
 }

@@ -58,7 +58,7 @@ class CreateOrderHandler
                 'shipping_price'   => $command->shippingPrice,
                 'discount'         => 0.00,
                 'currency'         => 'MAD',
-                'status'           => 'nouveau',
+                'status'           => 'new',
                 'financial_status' => 'unpaid',
                 'notes'            => $command->notes,
                 'source_channel'   => $command->source,
@@ -113,7 +113,7 @@ class CreateOrderHandler
                 userId: $command->createdByUserId,
                 actionType: 'status_changed',
                 oldValue: null,
-                newValue: 'nouveau',
+                newValue: 'new',
                 description: 'Commande créée manuellement.',
             );
 

@@ -9,34 +9,35 @@ class OrderStateMachine
 {
 
     private const CONFIRMATION_STATUSES = [
-        'nouveau', 'confirmed', 'no_response', 'rappel',
-        'cancelled', 'doublon', 'wrong_number',
-        // keep legacy slugs for backwards compatibility
-        'pending', 'no_answer', 'callback', 'duplicate', 'wrong_num',
+        'new', 'confirmed', 'no_response', 'callback',
+        'cancelled', 'duplicate', 'wrong_number',
+        'pending', 'abandoned', 'recovered',
+
     ];
 
     private const TRANSITIONS = [
 
-        'nouveau'      => ['confirmed', 'no_response', 'rappel', 'cancelled', 'doublon', 'wrong_number', 'pending'],
-        'no_response'  => ['nouveau', 'confirmed', 'rappel', 'cancelled', 'doublon', 'wrong_number'],
-        'rappel'       => ['nouveau', 'confirmed', 'no_response', 'cancelled', 'doublon', 'wrong_number'],
-        'doublon'      => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'wrong_number'],
-        'wrong_number' => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'doublon'],
+        'new'          => ['confirmed', 'no_response', 'callback', 'cancelled', 'duplicate', 'wrong_number', 'pending'],
+        'no_response' => ['new', 'confirmed', 'callback', 'cancelled', 'duplicate', 'wrong_number'],
+        'callback'     => ['new', 'confirmed', 'no_response', 'cancelled', 'duplicate', 'wrong_number'],
+        'duplicate'    => ['new', 'confirmed', 'no_response', 'callback', 'cancelled', 'wrong_number'],
+        'wrong_number' => ['new', 'confirmed', 'no_response', 'callback', 'cancelled', 'duplicate'],
 
-        'no_answer'    => ['nouveau', 'confirmed', 'rappel', 'cancelled', 'doublon', 'wrong_number', 'no_response', 'abandoned'],
-        'callback'     => ['nouveau', 'confirmed', 'no_response', 'cancelled', 'doublon', 'wrong_number', 'rappel'],
-        'duplicate'    => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'wrong_number', 'doublon'],
-        'wrong_num'    => ['nouveau', 'confirmed', 'no_response', 'rappel', 'cancelled', 'doublon', 'wrong_number'],
+        'pending'    => ['confirmed', 'cancelled', 'abandoned', 'new', 'no_response', 'callback', 'duplicate', 'wrong_number'],
+        'confirmed'  => ['processing', 'cancelled', 'returned', 'new', 'no_response', 'callback', 'duplicate', 'wrong_number'],
 
 
-        'pending'    => ['confirmed', 'cancelled', 'abandoned', 'nouveau', 'no_response', 'rappel', 'doublon', 'wrong_number'],
-        'confirmed'  => ['processing', 'cancelled', 'returned', 'nouveau', 'no_response', 'rappel', 'doublon', 'wrong_number'],
+
+
+        
         'processing' => ['shipped', 'cancelled'],
         'shipped'    => ['delivered', 'returned'],
         'delivered'  => ['returned'],
-        'cancelled'  => ['nouveau', 'confirmed', 'no_response', 'rappel', 'doublon', 'wrong_number'],
+        'cancelled'  => ['new', 'confirmed', 'no_response', 'callback', 'duplicate', 'wrong_number'],
         'returned'   => [],
-        'abandoned'  => ['pending', 'nouveau', 'recovered'],
+        'abandoned'  => ['pending', 'new', 'recovered'],
+
+
     ];
 
     public function __construct(

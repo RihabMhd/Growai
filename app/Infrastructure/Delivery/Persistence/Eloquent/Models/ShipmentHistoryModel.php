@@ -18,6 +18,7 @@ class ShipmentHistoryModel extends Model
         'source',
         'description',
         'payload',
+        'provider_status',
         'created_at',
     ];
 

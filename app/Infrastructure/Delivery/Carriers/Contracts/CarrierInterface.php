@@ -13,4 +13,12 @@ interface CarrierInterface
     public function registerWebhook(): bool;
 
     public function validateWebhook(array $payload): bool;
+
+    /**
+     * Provider-driven parcel statuses for the fulfillment dropdown.
+     *
+     * @return array<int, array{code: string, label: string, color: string, type: string, icon?: string}>
+     */
+    public function getAvailableStatuses(): array;
 }
+

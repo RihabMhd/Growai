@@ -250,6 +250,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/test-connection', [DeliveryCompanyController::class, 'testConnection']);
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Delivery Company Statuses (Provider-driven)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('delivery-companies')->group(function () {
+        Route::get('/{id}/statuses', [\App\Http\Controllers\Api\Delivery\DeliveryCompanyStatusesController::class, 'index']);
+    });
+
+
 
 
     Route::get('/companies/{id}/actions', [CarrierActionController::class, 'index']);

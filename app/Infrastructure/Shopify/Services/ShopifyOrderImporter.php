@@ -187,6 +187,6 @@ final readonly class ShopifyOrderImporter
             return 'fulfilled';
         }
 
-        return 'nouveau';
+        return 'new';
     }
 }

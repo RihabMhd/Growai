@@ -8,8 +8,8 @@ return new class extends Migration
     private const MISSING_STATUSES = [
         ['slug' => 'nouveau',       'name' => 'Nouveau'],
         ['slug' => 'no_response',   'name' => 'Pas de réponse'],
-        ['slug' => 'rappel',        'name' => 'Rappel'],
-        ['slug' => 'doublon',       'name' => 'Doublon'],
+        ['slug' => 'callback',      'name' => 'Rappel'],
+        ['slug' => 'duplicate',     'name' => 'Doublon'],
         ['slug' => 'wrong_number',  'name' => 'Mauvais numéro'],
         ['slug' => 'processing',    'name' => 'En traitement'],
         ['slug' => 'shipped',       'name' => 'Expédié'],

@@ -22,6 +22,7 @@ final class EloquentShipmentHistoryRepository implements ShipmentHistoryReposito
             'source' => $history->source,
             'description' => $history->description,
             'payload' => $history->payload,
+            'provider_status' => $history->providerStatus,
             'created_at' => $history->createdAt ?? now(),
         ]);
 

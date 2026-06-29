@@ -6,7 +6,7 @@ use App\Domain\Orders\Actions\OrderMetricsCalculator;
 
 final class DashboardStatus
 {
-    public const PENDING_STATUSES = ['nouveau', 'pending', 'recovered'];
+    public const PENDING_STATUSES = ['new', 'pending', 'recovered'];
     public const DELIVERED_STATUS = 'delivered';
     public const RECOVERED_STATUS = 'recovered';
 

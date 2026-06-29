@@ -2,11 +2,12 @@
 
 namespace App\Infrastructure\Delivery\Queue\Jobs;
 
+use App\Domain\Delivery\DeliveryCompany\Repositories\DeliveryCompanyRepositoryInterface;
 use App\Domain\Delivery\Shipment\Repositories\ShipmentRepositoryInterface;
 use App\Domain\Delivery\Shipment\Services\ShipmentLifecycleService;
-use App\Domain\Delivery\Shipment\Services\ShipmentStatusMapper;
 use App\Domain\Delivery\Shipment\ValueObjects\ShipmentStatusSlug;
 use App\Infrastructure\Delivery\Carriers\CarrierManager;
+use App\Infrastructure\Delivery\Carriers\ShipmentStatusMapperFactory;
 use App\Infrastructure\Delivery\Services\OrderShipmentSyncService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,9 +24,10 @@ final class SyncTrackingJob implements ShouldQueue
     public function handle(
         ShipmentRepositoryInterface $shipments,
         CarrierManager $carrierManager,
-        ShipmentStatusMapper $statusMapper,
+        ShipmentStatusMapperFactory $mapperFactory,
         ShipmentLifecycleService $lifecycle,
         OrderShipmentSyncService $orderSync,
+        DeliveryCompanyRepositoryInterface $companies,
     ): void {
         $shipment = $shipments->findById($this->shipmentId);
 
@@ -42,14 +44,16 @@ final class SyncTrackingJob implements ShouldQueue
             return;
         }
 
-        $mappedSlug = $statusMapper->mapFromCarrier($carrierStatus);
+        $company = $companies->findById($shipment->deliveryCompanyId);
+        $mapper = $mapperFactory->make($company?->slug ?? 'generic');
+        $fulfillmentSlug = $mapper->mapFromProvider($carrierStatus);
 
-        if ($mappedSlug === $shipment->status->value) {
+        if ($fulfillmentSlug === $shipment->status->value && $carrierStatus === $shipment->providerStatus) {
             return;
         }
 
         $updated = $shipments->save(
-            $shipment->withStatus(new ShipmentStatusSlug($mappedSlug))
+            $shipment->withStatus(new ShipmentStatusSlug($fulfillmentSlug), $carrierStatus)
         );
 
         $lifecycle->recordStatusChange(
@@ -58,6 +62,7 @@ final class SyncTrackingJob implements ShouldQueue
             source: 'carrier_sync',
             description: 'Status synced from carrier tracking API.',
             payload: $tracking,
+            providerStatus: $carrierStatus,
         );
 
         $orderSync->syncFromShipment($updated);

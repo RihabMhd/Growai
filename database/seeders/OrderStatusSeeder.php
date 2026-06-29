@@ -11,15 +11,16 @@ class OrderStatusSeeder extends Seeder
     {
         $statuses = [
             // ── Confirmation statuses ─────────────────────────────────────────
-            ['slug' => 'pending',            'name' => 'Nouveau',            'auto_send' => false],
-            ['slug' => 'confirmed',          'name' => 'Confirmé',           'auto_send' => false],
-            ['slug' => 'no_answer',          'name' => 'Pas de réponse',     'auto_send' => false],
-            ['slug' => 'abandoned',          'name' => 'AbandonnÃ©',          'auto_send' => false],
-            ['slug' => 'recovered',          'name' => 'RÃ©cupÃ©rÃ©',           'auto_send' => false],
-            ['slug' => 'callback',           'name' => 'Rappel',             'auto_send' => false],
-            ['slug' => 'cancelled',          'name' => 'Annulé',             'auto_send' => false],
-            ['slug' => 'duplicate',          'name' => 'Doublon',            'auto_send' => false],
-            ['slug' => 'wrong_num',          'name' => 'Mauvais numéro',     'auto_send' => false],
+            ['slug' => 'new',               'name' => 'New',                'auto_send' => false],
+            ['slug' => 'confirmed',         'name' => 'Confirmed',         'auto_send' => false],
+            ['slug' => 'no_response',       'name' => 'No Response',      'auto_send' => false],
+            ['slug' => 'abandoned',         'name' => 'Abandoned',        'auto_send' => false],
+            ['slug' => 'recovered',         'name' => 'Recovered',        'auto_send' => false],
+            ['slug' => 'callback',          'name' => 'Callback',         'auto_send' => false],
+            ['slug' => 'cancelled',         'name' => 'Cancelled',        'auto_send' => false],
+            ['slug' => 'duplicate',         'name' => 'Duplicate',        'auto_send' => false],
+            ['slug' => 'wrong_number',      'name' => 'Wrong Number',    'auto_send' => false],
+
 
             // ── Company / delivery statuses ───────────────────────────────────
             ['slug' => 'label_created',      'name' => 'Label Created',      'auto_send' => false],
