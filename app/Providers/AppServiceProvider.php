@@ -40,7 +40,7 @@ use App\Domain\Orders\Repositories\OrderStatusRepositoryInterface;
 use App\Infrastructure\Orders\Repositories\EloquentOrderStatusRepository;
 
 use App\Domain\Teams\TeamRepositoryInterface;
-use App\Infrastructure\Teams\EloquentTeamRepository;
+use App\Infrastructure\Team\EloquentTeamRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
