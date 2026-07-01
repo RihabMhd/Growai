@@ -21,6 +21,7 @@ return [
 
     'allowed_origins' => [
         'https://growaimanager.vercel.app',
+        'https://growaimanager-jxchuhl16-rihab-mhds-projects.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
