@@ -257,6 +257,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::prefix('delivery-companies')->group(function () {
+        Route::get('/statuses', [\App\Http\Controllers\Api\Delivery\DeliveryCompanyStatusesController::class, 'all']);
         Route::get('/{id}/statuses', [\App\Http\Controllers\Api\Delivery\DeliveryCompanyStatusesController::class, 'index']);
     });
 

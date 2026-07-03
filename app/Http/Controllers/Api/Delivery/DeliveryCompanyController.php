@@ -44,6 +44,17 @@ final class DeliveryCompanyController extends Controller
             $request->filled('active') ? $request->boolean('active') : null
         );
 
+        // [AUDIT DEBUG] — remove after bug is confirmed fixed
+        foreach ($companies as $c) {
+            Log::debug('[AUDIT] company in index', [
+                'id'         => $c->id,
+                'slug'       => $c->slug,
+                'is_active'  => $c->is_active,
+                'has_api_key'=> ! empty($c->api_key),
+                'credentials_keys' => $c->credentials ? array_keys(json_decode($c->credentials, true) ?? []) : [],
+            ]);
+        }
+
         return response()->json(['companies' => $companies]);
     }
 
@@ -52,9 +63,20 @@ final class DeliveryCompanyController extends Controller
         try {
             $company = $this->getCompany->execute((int) $id);
 
+            // [AUDIT DEBUG] — remove after bug is confirmed fixed
+            Log::debug('[AUDIT] company in show', [
+                'id'         => $company->id,
+                'slug'       => $company->slug,
+                'is_active'  => $company->is_active,
+                'has_api_key'=> ! empty($company->api_key),
+                'credentials_keys' => $company->credentials ? array_keys(json_decode($company->credentials, true) ?? []) : [],
+            ]);
+
+            $isConnected = (bool) ($company->isActive && $company->hasCredentials);
+
             return response()->json([
                 'company' => $company,
-                'is_connected' => (bool) $company->isActive && $company->hasCredentials,
+                'is_connected' => $isConnected,
                 'subscription_status' => [
                     'webhook_enabled' => (bool) $company->webhookEnabled,
                     'webhook_registered_at' => $company->webhookRegisteredAt,
